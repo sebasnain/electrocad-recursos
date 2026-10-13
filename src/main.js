@@ -83,7 +83,7 @@ app.innerHTML = `
           <label class="check-row"><input id="optRects" type="checkbox" checked /><span><strong>Reconocer rectángulos</strong><small>Cuatro lados a 90° pasan a ser un rectángulo que se puede redimensionar</small></span></label>
           <label class="check-row"><input id="optTexts" type="checkbox" checked /><span><strong>Incluir textos</strong><small>Rótulos y nombres de ambientes</small></span></label>
           <label class="check-row"><input id="optDims" type="checkbox" /><span><strong>Incluir cotas de AutoCAD</strong><small>Suelen ensuciar el plano; mejor medir en ElectroCAD</small></span></label>
-          <label class="check-row"><input id="optColors" type="checkbox" /><span><strong>Conservar colores</strong><small>Si no, se ve con el aspecto normal de ElectroCAD</small></span></label>
+          <label class="check-row"><input id="optColors" type="checkbox" checked /><span><strong>Conservar los colores del plano</strong><small>Se ajustan para leerse bien; si no, aspecto normal de ElectroCAD</small></span></label>
 
           <div class="step final-step"><span>3</span><div><strong>Llevalo a ElectroCAD</strong><small id="finalHint"></small></div></div>
           <button id="convertBtn" class="primary" type="button"></button>
@@ -631,6 +631,18 @@ async function handleFile(file) {
 }
 
 // ── exportación ──────────────────────────────────────────────────────────
+// Los colores de AutoCAD están pensados para fondo negro; en ElectroCAD (lienzo oscuro y PDF blanco)
+// se llevan a un rango medio de luminosidad que se lee bien en los dos.
+function legible(hex) {
+  const n = parseInt(hex.slice(1), 16);
+  let r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+  const L = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+  if (L < 0.30) { const t = (0.30 - L) / (1 - L); r += (255 - r) * t; g += (255 - g) * t; b += (255 - b) * t; }
+  else if (L > 0.70) { const k = 0.70 / L; r *= k; g *= k; b *= k; }
+  const h = v => Math.round(Math.max(0, Math.min(255, v))).toString(16).padStart(2, '0');
+  return `#${h(r)}${h(g)}${h(b)}`;
+}
+
 function createPayload() {
   const selected = enabledShapes();
   if (!selected.length) throw new Error('Activá al menos una capa para convertir.');
@@ -646,14 +658,14 @@ function createPayload() {
       const lines = s.text.split('\n'), w = Math.max(...lines.map(l => l.length)) * s.heightCm * 0.55, hh = lines.length * s.heightCm * 1.25;
       const dx = Math.cos(s.rot || 0), dy = Math.sin(s.rot || 0), up = s.top ? -hh / 2 : hh / 2 - s.heightCm * 0.25;
       const cx = s.x1 + dx * w / 2 + dy * up, cy = s.y1 + dy * w / 2 - dx * up;
-      const t = { id: tid++, x: round3(cx - off.x), y: round3(cy - off.y), text: s.text, size, color: s.color || '', layer: state.layers.get(s.layer)?.cap || 'infra' };
+      const t = { id: tid++, x: round3(cx - off.x), y: round3(cy - off.y), text: s.text, size, color: s.color ? legible(s.color) : '', layer: state.layers.get(s.layer)?.cap || 'infra' };
       if (s.rot) t.rot = round3(s.rot);
       texts.push(t); continue;
     }
     const o = { id: sid++, type: s.type, x1: round3(s.x1 - off.x), y1: round3(s.y1 - off.y), x2: round3(s.x2 - off.x), y2: round3(s.y2 - off.y), layer: state.layers.get(s.layer)?.cap || 'infra' };
     if (s.type === 'arc') { o.h = round3(s.h); if (s.semi) o.semi = true; }
     if (s.rot) o.rot = round3(s.rot);
-    if (s.color) o.color = s.color;
+    if (s.color) o.color = legible(s.color);
     shapes.push(o);
   }
   return {
