@@ -456,7 +456,7 @@ function buildShapes(first = false) {
     if (!next.has(s.layer)) {
       const was = prev.get(s.layer);
       const off = first ? info(s.layer).off : false;
-      next.set(s.layer, { name: s.layer, enabled: was ? was.enabled : !off, count: 0, off: info(s.layer).off, role: roleOf(s.layer) });
+      next.set(s.layer, { name: s.layer, enabled: was ? was.enabled : !off, count: 0, off: info(s.layer).off, role: roleOf(s.layer), cap: was ? was.cap : (roleOf(s.layer)?.[0] === 'mobiliario' ? 'furniture' : 'infra') });
     }
     next.get(s.layer).count++;
   }
@@ -478,6 +478,7 @@ function renderLayers() {
       <input type="checkbox" data-layer="${escapeHtml(l.name)}" ${l.enabled ? 'checked' : ''} />
       <i style="--layer-color:${layerColor(i)}"></i>
       <span class="lname"><b title="${escapeHtml(l.name)}">${escapeHtml(l.name)}</b>${l.role ? `<em class="role role-${l.role[0]}">${l.role[1]}</em>` : ''}${l.off ? '<em class="role role-off" title="Estaba apagada o congelada en AutoCAD">apagada</em>' : ''}</span>
+      <select class="cap-select" data-cap="${escapeHtml(l.name)}" title="Capa de ElectroCAD a la que va"><option value="infra"${l.cap === 'infra' ? ' selected' : ''}>Arquitectura</option><option value="pipes"${l.cap === 'pipes' ? ' selected' : ''}>Cañerías</option><option value="furniture"${l.cap === 'furniture' ? ' selected' : ''}>Muebles</option></select>
       <small>${fmt(l.count)}</small>
     </label>`).join('');
   const any = [...state.layers.values()].some(l => l.enabled);
@@ -645,11 +646,11 @@ function createPayload() {
       const lines = s.text.split('\n'), w = Math.max(...lines.map(l => l.length)) * s.heightCm * 0.55, hh = lines.length * s.heightCm * 1.25;
       const dx = Math.cos(s.rot || 0), dy = Math.sin(s.rot || 0), up = s.top ? -hh / 2 : hh / 2 - s.heightCm * 0.25;
       const cx = s.x1 + dx * w / 2 + dy * up, cy = s.y1 + dy * w / 2 - dx * up;
-      const t = { id: tid++, x: round3(cx - off.x), y: round3(cy - off.y), text: s.text, size, color: s.color || '', layer: 'infra' };
+      const t = { id: tid++, x: round3(cx - off.x), y: round3(cy - off.y), text: s.text, size, color: s.color || '', layer: state.layers.get(s.layer)?.cap || 'infra' };
       if (s.rot) t.rot = round3(s.rot);
       texts.push(t); continue;
     }
-    const o = { id: sid++, type: s.type, x1: round3(s.x1 - off.x), y1: round3(s.y1 - off.y), x2: round3(s.x2 - off.x), y2: round3(s.y2 - off.y), layer: 'infra' };
+    const o = { id: sid++, type: s.type, x1: round3(s.x1 - off.x), y1: round3(s.y1 - off.y), x2: round3(s.x2 - off.x), y2: round3(s.y2 - off.y), layer: state.layers.get(s.layer)?.cap || 'infra' };
     if (s.type === 'arc') { o.h = round3(s.h); if (s.semi) o.semi = true; }
     if (s.rot) o.rot = round3(s.rot);
     if (s.color) o.color = s.color;
@@ -708,7 +709,7 @@ els.sampleBtn.addEventListener('click', async () => {
 });
 els.unitSelect.addEventListener('change', () => { state.unitMode = els.unitSelect.value; buildShapes(true); });
 [els.optRects, els.optTexts, els.optDims, els.optColors].forEach(el => el.addEventListener('change', () => state.dxf && buildShapes()));
-els.layerList.addEventListener('change', e => { const l = state.layers.get(e.target.dataset.layer); if (!l) return; l.enabled = e.target.checked; refresh(); });
+els.layerList.addEventListener('change', e => { if (e.target.dataset.cap !== undefined) { const c = state.layers.get(e.target.dataset.cap); if (c) c.cap = e.target.value; return; } const l = state.layers.get(e.target.dataset.layer); if (!l) return; l.enabled = e.target.checked; refresh(); });
 els.presets.addEventListener('click', e => { const id = e.target.dataset.preset; if (id) applyPreset(id); });
 els.toggleLayers.addEventListener('click', () => { const on = [...state.layers.values()].some(l => !l.enabled); state.layers.forEach(l => l.enabled = on); refresh(true); });
 els.convertBtn.addEventListener('click', convert);

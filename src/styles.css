@@ -32,3 +32,5 @@
 .view-tools button.active{border-color:var(--green);color:var(--green);background:rgba(0,232,122,.12)}
 .zone-chip{font:inherit;font-size:12px;color:var(--green);background:rgba(0,232,122,.1);border:1px solid rgba(0,232,122,.4);border-radius:8px;padding:6px 10px;cursor:pointer}
 .legal{margin-top:28px;padding-top:16px;border-top:1px solid var(--line);color:var(--muted);font-size:12px;line-height:1.6}.legal a{color:var(--green)}
+.cap-select{font:inherit;font-size:11px;background:#091321;color:#cfe0f5;border:1px solid #293b54;border-radius:6px;padding:3px 4px;width:96px}
+.layer-row{grid-template-columns:18px 10px minmax(0,1fr) auto auto}
