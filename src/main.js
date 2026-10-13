@@ -633,7 +633,9 @@ async function handleFile(file) {
 function createPayload() {
   const selected = enabledShapes();
   if (!selected.length) throw new Error('Activá al menos una capa para convertir.');
-  const b = boundsFor(selected), off = { x: b.minX - MARGIN_CM, y: b.minY - MARGIN_CM };
+  // El origen sale de TODO el archivo: dos zonas del mismo plano comparten coordenadas y, importadas
+  // por separado en ElectroCAD, quedan una junto a la otra.
+  const b = boundsFor(selected), ball = boundsFor(state.shapes), off = { x: ball.minX - MARGIN_CM, y: ball.minY - MARGIN_CM };
   const shapes = [], texts = [];
   let sid = 1, tid = 1;
   for (const s of selected) {
@@ -655,7 +657,8 @@ function createPayload() {
   }
   return {
     electrocadImportV: 1,
-    name: state.file.name.replace(/\.dxf$/i, '') || 'Plano importado',
+    origenId: `${state.file.name}|${state.file.size}|${activeUnit()}`,
+    name: state.file.name.replace(/\.(dxf|dwg)$/i, '') || 'Plano importado',
     source: { format: 'DXF', fileName: state.file.name, unit: activeUnit(), importedAt: new Date().toISOString() },
     extentCm: { width: round3(b.width + MARGIN_CM * 2), height: round3(b.height + MARGIN_CM * 2) },
     shapes, texts,
