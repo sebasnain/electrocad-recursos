@@ -1,0 +1,20 @@
+{
+  "name": "recursos-electrocad",
+  "version": "0.1.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "vite --host 127.0.0.1",
+    "build": "vite build",
+    "preview": "vite preview --host 127.0.0.1",
+    "predev": "node scripts/copy-wasm.mjs",
+    "prebuild": "node scripts/copy-wasm.mjs"
+  },
+  "dependencies": {
+    "@mlightcad/libredwg-web": "^0.8.0",
+    "dxf-parser": "^1.1.2"
+  },
+  "devDependencies": {
+    "vite": "^7.1.5"
+  }
+}

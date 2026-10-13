@@ -1,0 +1,11 @@
+node_modules/
+dist/
+.sites-runtime/
+.env
+*.log
+public/libredwg/
+
+# Planos de prueba (son de clientes, NO se publican)
+archivos para probar/
+.claude/
+.firebase/
