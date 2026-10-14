@@ -472,13 +472,34 @@ function refresh(fit = false) {
   renderLayers(); renderPresets(); updateStats(); renderNotes(); renderPreview();
 }
 
+// Destinos posibles de cada capa: las 3 fijas de ElectroCAD o una capa auxiliar nueva con nombre propio
+// (ElectroCAD admite hasta 12; las crea al importar, o reusa una existente con el mismo nombre).
+const AUX_MAX = 12;
+const cleanAuxName = n => String(n == null ? '' : n).replace(/[<>"'&]/g, '').replace(/\s+/g, ' ').trim().slice(0, 24);
+function capOptions(l) {
+  const opt = (v, t) => `<option value="${escapeHtml(v)}"${l.cap === v ? ' selected' : ''}>${escapeHtml(t)}</option>`;
+  return opt('infra', 'Arquitectura') + opt('pipes', 'Cañerías') + opt('furniture', 'Muebles')
+    + (state.newCaps || []).map(n => opt('aux:' + n, n + ' (nueva)')).join('') + '<option value="__new__">＋ Nueva capa…</option>';
+}
+function confirmNewCap(l, raw) {
+  l.creating = false;
+  const n = cleanAuxName(raw);
+  if (n) {
+    const pend = (state.newCaps || []).find(x => x.toLowerCase() === n.toLowerCase());
+    if (pend) l.cap = 'aux:' + pend;
+    else if ((state.newCaps || []).length >= AUX_MAX) setMessage('Máximo 12 capas auxiliares: elegí una existente.', 'error');
+    else l.cap = 'aux:' + n;
+  }
+  renderLayers();
+}
 function renderLayers() {
+  state.newCaps = [...new Set([...state.layers.values()].map(l => l.cap).filter(c => typeof c === 'string' && c.startsWith('aux:')).map(c => c.slice(4)))];
   els.layerList.innerHTML = [...state.layers.values()].map((l, i) => `
     <label class="layer-row">
       <input type="checkbox" data-layer="${escapeHtml(l.name)}" ${l.enabled ? 'checked' : ''} />
       <i style="--layer-color:${layerColor(i)}"></i>
       <span class="lname"><b title="${escapeHtml(l.name)}">${escapeHtml(l.name)}</b>${l.role ? `<em class="role role-${l.role[0]}">${l.role[1]}</em>` : ''}${l.off ? '<em class="role role-off" title="Estaba apagada o congelada en AutoCAD">apagada</em>' : ''}</span>
-      <select class="cap-select" data-cap="${escapeHtml(l.name)}" title="Capa de ElectroCAD a la que va"><option value="infra"${l.cap === 'infra' ? ' selected' : ''}>Arquitectura</option><option value="pipes"${l.cap === 'pipes' ? ' selected' : ''}>Cañerías</option><option value="furniture"${l.cap === 'furniture' ? ' selected' : ''}>Muebles</option></select>
+      ${l.creating ? `<input type="text" class="cap-select cap-new" data-newcap="${escapeHtml(l.name)}" maxlength="24" placeholder="Nombre de la capa" />` : `<select class="cap-select" data-cap="${escapeHtml(l.name)}" title="Capa de ElectroCAD a la que va">${capOptions(l)}</select>`}
       <small>${fmt(l.count)}</small>
     </label>`).join('');
   const any = [...state.layers.values()].some(l => l.enabled);
@@ -615,7 +636,7 @@ async function handleFile(file) {
       dxf = new DxfParser().parseSync(source);
     }
     if (!dxf?.entities?.length) throw new Error('el archivo no contiene dibujo en el espacio modelo.');
-    state.clip = null; state.zoneMode = false; state.file = file; state.dxf = dxf; state.unitMode = 'auto'; els.unitSelect.value = 'auto';
+    state.newCaps = []; state.clip = null; state.zoneMode = false; state.file = file; state.dxf = dxf; state.unitMode = 'auto'; els.unitSelect.value = 'auto';
     state.guessedUnit = guessUnit(dxf); state.layers = new Map(); state.rawSkipped = source ? scanUnread(source) : [];
     buildShapes(true);
     if (!state.shapes.length) throw new Error('no se encontró geometría que se pueda convertir.');
@@ -721,7 +742,20 @@ els.sampleBtn.addEventListener('click', async () => {
 });
 els.unitSelect.addEventListener('change', () => { state.unitMode = els.unitSelect.value; buildShapes(true); });
 [els.optRects, els.optTexts, els.optDims, els.optColors].forEach(el => el.addEventListener('change', () => state.dxf && buildShapes()));
-els.layerList.addEventListener('change', e => { if (e.target.dataset.cap !== undefined) { const c = state.layers.get(e.target.dataset.cap); if (c) c.cap = e.target.value; return; } const l = state.layers.get(e.target.dataset.layer); if (!l) return; l.enabled = e.target.checked; refresh(); });
+els.layerList.addEventListener('keydown', e => {
+  const n = e.target.dataset?.newcap; if (n === undefined) return;
+  const l = state.layers.get(n); if (!l) return;
+  if (e.key === 'Enter') { e.preventDefault(); confirmNewCap(l, e.target.value); }
+  else if (e.key === 'Escape') { l.creating = false; renderLayers(); }
+});
+els.layerList.addEventListener('focusout', e => { const n = e.target.dataset?.newcap; if (n === undefined) return; const l = state.layers.get(n); if (l?.creating) confirmNewCap(l, e.target.value); });
+els.layerList.addEventListener('change', e => {
+  if (e.target.dataset.newcap !== undefined) return;
+  if (e.target.dataset.cap !== undefined) {
+    const c = state.layers.get(e.target.dataset.cap); if (!c) return;
+    if (e.target.value === '__new__') { c.creating = true; renderLayers(); els.layerList.querySelector('.cap-new')?.focus(); return; }
+    c.cap = e.target.value; renderLayers(); return;
+  } const l = state.layers.get(e.target.dataset.layer); if (!l) return; l.enabled = e.target.checked; refresh(); });
 els.presets.addEventListener('click', e => { const id = e.target.dataset.preset; if (id) applyPreset(id); });
 els.toggleLayers.addEventListener('click', () => { const on = [...state.layers.values()].some(l => !l.enabled); state.layers.forEach(l => l.enabled = on); refresh(true); });
 els.convertBtn.addEventListener('click', convert);
