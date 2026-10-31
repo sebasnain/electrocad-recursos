@@ -1,0 +1,38 @@
+[
+ {
+  "file": "eclib-esquemas-electricos-basicos.zip",
+  "name": "Esquemas eléctricos básicos",
+  "symbols": 133,
+  "description": "Interruptores, protecciones, contactores, transformadores, motores, instrumentos, diodos, compuertas. Esquemas tipo unifilar/funcional (DWG «bloques electricidad»).",
+  "bytes": 22620,
+  "json": "eclib-esquemas-electricos-basicos.json",
+  "source": "Planos de simbología eléctrica de uso general (esquemas tipo IEC)."
+ },
+ {
+  "file": "eclib-simbologia-electrica-comun-residencial.zip",
+  "name": "Simbología eléctrica común (residencial)",
+  "symbols": 49,
+  "description": "Apagadores, contactos, lámparas, arbotantes, timbres, ventiladores y tierra (DWG «Simbología eléctrica básica»).",
+  "bytes": 6694,
+  "json": "eclib-simbologia-electrica-comun-residencial.json",
+  "source": "Hoja de simbología eléctrica residencial de uso general."
+ },
+ {
+  "file": "eclib-salta-referencias-de-planos.zip",
+  "name": "Salta — referencias de planos",
+  "symbols": 33,
+  "description": "Tomas IRAM 2071 e IEC 60309, bocas, tableros, medidores y emergencias de las referencias de planos COPAIPA (PDF).",
+  "bytes": 22048,
+  "json": "eclib-salta-referencias-de-planos.json",
+  "source": "Referencias de planos ITC-003 (COPAIPA, Salta). Documento borrador del colegio profesional."
+ },
+ {
+  "file": "eclib-comando-y-potencia-tableros-industriales.zip",
+  "name": "Comando y potencia (tableros industriales)",
+  "symbols": 38,
+  "description": "Contactores, guardamotor, termomagnéticas, finales de carrera, presostatos, bornera (DWG «Símbolos eléctricos»).",
+  "bytes": 9380,
+  "json": "eclib-comando-y-potencia-tableros-industriales.json",
+  "source": "Símbolos de comando y potencia (normas IRAM/IEC)."
+ }
+]

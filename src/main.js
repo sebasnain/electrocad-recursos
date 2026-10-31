@@ -1,5 +1,6 @@
 import DxfParser from 'dxf-parser';
 import './styles.css';
+import { mountSymbolCatalog } from './simbolos.js';
 
 // ── Conversor DXF → ElectroCAD ────────────────────────────────────────────
 // Salida: el MISMO formato que usa ElectroCAD en `shapes[]` (ver formas.js):
@@ -42,7 +43,7 @@ app.innerHTML = `
       <span class="brand-mark" aria-hidden="true">ϟ</span>
       <span>Recursos <strong>ElectroCAD</strong></span>
     </a>
-    <span class="product-pill">Conversor DXF</span>
+    <span class="product-pill"><a href="#symbols" style="color:inherit;text-decoration:none">Símbolos ↓</a> · Conversor DXF</span>
   </header>
 
   <main class="workspace">
@@ -112,6 +113,7 @@ app.innerHTML = `
       <div class="result-actions"><a id="openLink" class="primary link-button hidden" target="_blank" rel="noopener">Abrir en ElectroCAD</a><button id="copyLink" class="secondary hidden">Copiar enlace</button></div>
     </section>
     <p id="message" class="message" role="status"></p>
+    <section id="symbols" class="symbols-section" aria-label="Bibliotecas de símbolos"></section>
     <footer class="legal">Lectura de archivos DWG con <a href="https://github.com/mlightcad/libredwg-web" target="_blank" rel="noopener">libredwg-web</a> (GPL-3.0). Esta página es software libre bajo GPL-3.0${import.meta.env.VITE_SOURCE_URL ? ` · <a href="${import.meta.env.VITE_SOURCE_URL}" target="_blank" rel="noopener">código fuente</a>` : ''}. Todo se procesa en tu navegador: ningún archivo se sube.</footer>
   </main>
 `;
@@ -803,6 +805,8 @@ if (document.modelContext?.registerTool) {
   const controller = new AbortController();
   Promise.resolve(document.modelContext.registerTool({ name: 'get_dxf_conversion_summary', title: 'Revisar conversión DXF', description: 'Devuelve un resumen de las figuras y capas actualmente seleccionadas para convertir.', inputSchema: { type: 'object', properties: {}, additionalProperties: false }, annotations: { readOnlyHint: true, untrustedContentHint: true }, execute: () => ({ file: state.file?.name || null, unit: state.dxf ? activeUnit() : null, shapes: enabledShapes().length, layers: [...state.layers.values()].filter(l => l.enabled).map(l => l.name) }) }, { signal: controller.signal })).catch(() => {});
 }
+
+mountSymbolCatalog(document.querySelector('#symbols'));
 
 // Expuesto para pruebas manuales / automáticas.
 window.__dxf = { state, convertEntities, createPayload, asRect, arcPoints };
