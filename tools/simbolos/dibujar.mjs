@@ -478,6 +478,302 @@ const pack9 = [
   sym('Pulsador luminoso', [C(0, 0, .45), C(0, 0, .35), ...X(0, 0, .24)], 'B.P. lumineux'),
 ];
 
+// ── Etapa 3: electrónica ───────────────────────────────────────────────
+// Convención: símbolos horizontales, terminales a x = ±1 sobre y = 0.
+const pat = (a, b, y = 0, x0 = -1, x1 = 1) => [L([x0, y], [a, y]), L([b, y], [x1, y])]; // patitas
+const resR = (w = .6, h = .24) => [rect(-w / 2, -h / 2, w, h), ...pat(-w / 2, w / 2)];
+const zigPts = (w = .8, h = .16, n = 6, cx = 0, cy = 0) => { const p = [[cx - w / 2, cy]]; for (let i = 0; i < n; i++) p.push([cx - w / 2 + (i + .5) * w / n, cy + (i % 2 ? h : -h)]); p.push([cx + w / 2, cy]); return p; };
+const resZ = (w = .8) => [L([-1, 0], ...zigPts(w), [1, 0])];
+const flechaDiag = (x0 = -.45, y0 = .4, x1 = .45, y1 = -.4, s = .14) => [L([x0, y0], [x1, y1]), flecha(x1 + (x1 - x0) * .12, y1 + (y1 - y0) * .12, x1 - x0, y1 - y0, s)];
+const tBar = (x0 = -.45, y0 = .4, x1 = .45, y1 = -.4) => { const m = Math.hypot(x1 - x0, y1 - y0), n = [-(y1 - y0) / m * .13, (x1 - x0) / m * .13]; return [L([x0, y0], [x1, y1]), L([x1 + n[0], y1 + n[1]], [x1 - n[0], y1 - n[1]])]; };
+const tri = (x, s, lleno, dir = 1) => (lleno ? F : Lc)([x - s * dir, -s], [x + s * dir, 0], [x - s * dir, s]);
+const diodo = (lleno = false, s = .25, conPatas = true) => [tri(0, s, lleno), L([s, -s], [s, s]), ...(conPatas ? pat(-s, s) : [])];
+const barraZener = (s = .25) => [L([s, -s], [s, s]), L([s, -s], [s + .1, -s - .06]), L([s, s], [s - .1, s + .06])];
+const barraSchottky = (s = .25) => [L([s + .1, -s + .08], [s + .1, -s], [s, -s], [s, s], [s - .1, s], [s - .1, s - .08])];
+const flechasLuz = (sale = true, x = .05, y = -.35) => [0, .22].map(dx => { const a = [x + dx, y], b = [x + dx + .28, y - .28];
+  return sale ? [L(a, b), flecha(b[0] + .04, b[1] - .04, 1, -1, .1)] : [L(b, a), flecha(a[0] - .04, a[1] + .04, -1, 1, .1)]; }).flat();
+const capV = (g = .08, h = .3) => [L([-g, -h], [-g, h]), L([g, -h], [g, h]), ...pat(-g, g)];
+const humps = (n = 4, r = .12, x0 = -.48, y = 0, arriba = true) => { const pts = []; for (let i = 0; i < n; i++) pts.push(...arcPts(x0 + r + i * 2 * r, y, r, 180, arriba ? 360 : 0, 10).slice(i ? 1 : 0)); return L(...pts); };
+const inductor = (n = 4, r = .12) => [humps(n, r, -n * r), ...pat(-n * r, n * r)];
+const bobinaV = (n = 4, r = .1, x = 0, y0 = -.4, der = true) => { const pts = []; for (let i = 0; i < n; i++) pts.push(...arcPts(x, y0 + r + i * 2 * r, r, der ? -90 : 270, 90, 10).slice(i ? 1 : 0)); return L(...pts); };
+const instr = (letra, r = .4) => [C(0, 0, r), ...pat(-r, r), txt(letra, 0, 0, .34)];
+const celda = (x = 0, largo = .35, corto = .18) => [L([x - .06, -largo], [x - .06, largo]), L([x + .06, -corto], [x + .06, corto])];
+const contactoNA = () => [L([-1, 0], [-.35, 0]), L([-.35, 0], [.3, -.3]), L([.35, 0], [1, 0])];
+// compuertas (entradas a la izquierda, salida a la derecha)
+const andForma = (x0 = -.4) => [L([x0, -.35], [0, -.35]), arc(0, 0, .35, -90, 90, 16), L([0, .35], [x0, .35], [x0, -.35])];
+const qpts = (a, c, b, n = 12) => Array.from({ length: n + 1 }, (_, i) => { const t = i / n, u = 1 - t; return [u * u * a[0] + 2 * u * t * c[0] + t * t * b[0], u * u * a[1] + 2 * u * t * c[1] + t * t * b[1]]; });
+const orForma = (x0 = -.45) => [L(...qpts([x0, -.35], [x0 + .2, 0], [x0, .35])), L(...qpts([x0, -.35], [.15, -.35], [.4, 0])), L(...qpts([x0, .35], [.15, .35], [.4, 0]))];
+const orAtras = (x0 = -.57) => L(...qpts([x0, -.35], [x0 + .2, 0], [x0, .35]));
+const burbuja = x => C(x + .07, 0, .07);
+const entradas = (xIn, x0 = -.9) => [L([x0, -.18], [xIn, -.18]), L([x0, .18], [xIn, .18])];
+const gate = (tipo) => {
+  const p = [];
+  if (tipo === 'and' || tipo === 'nand') p.push(...andForma(), ...entradas(-.4), ...(tipo === 'nand' ? [burbuja(.35), L([.49, 0], [.85, 0])] : [L([.35, 0], [.85, 0])]));
+  if (tipo === 'or' || tipo === 'nor' || tipo === 'xor' || tipo === 'xnor') {
+    p.push(...orForma(), ...entradas(-.36));
+    if (tipo === 'xor' || tipo === 'xnor') p.push(orAtras());
+    p.push(...(tipo === 'nor' || tipo === 'xnor' ? [burbuja(.4), L([.54, 0], [.85, 0])] : [L([.4, 0], [.85, 0])]));
+  }
+  if (tipo === 'not' || tipo === 'buffer') p.push(Lc([-.35, -.35], [.3, 0], [-.35, .35]), L([-.85, 0], [-.35, 0]), ...(tipo === 'not' ? [burbuja(.3), L([.44, 0], [.85, 0])] : [L([.3, 0], [.85, 0])]));
+  return p;
+};
+const opamp = (signos = true) => [Lc([-.45, -.5], [.5, 0], [-.45, .5]), L([-.9, -.22], [-.45, -.22]), L([-.9, .22], [-.45, .22]), L([.5, 0], [.9, 0]),
+  ...(signos ? [L([-.38, -.22], [-.26, -.22]), L([-.38, .22], [-.26, .22]), L([-.32, .16], [-.32, .28])] : [])];
+// transistores (círculo r .5; base/puerta a la izquierda)
+const bjt = (npn, letras = false, circulo = true) => {
+  const p = [L([-.15, -.28], [-.15, .28]), L([-.85, 0], [-.15, 0]), L([-.15, -.12], [.25, -.38], [.25, -.8]), L([-.15, .12], [.25, .38], [.25, .8])];
+  if (circulo) p.push(C(0, 0, .5));
+  p.push(npn ? flecha(.25, .38, .4, .26, .13) : flecha(-.1, .15, -.4, -.26, .13));
+  if (letras) p.push(txt('B', -.9, -.2, .2), txt('C', .45, -.62, .2), txt('E', .45, .68, .2));
+  return p;
+};
+const mosfet = (canalN, realce = true, letras = false) => {
+  const p = [C(0, 0, .5), L([-.85, .2], [-.25, .2]), L([-.25, -.3], [-.25, .3])];
+  if (realce) p.push(...[-.3, 0, .3].map(y => L([-.13, y - .1], [-.13, y + .1]))); else p.push(L([-.13, -.4], [-.13, .4]));
+  p.push(L([-.13, -.3], [.25, -.3], [.25, -.8]), L([-.13, .3], [.25, .3], [.25, .8]), L([-.13, 0], [.25, 0], [.25, .3]));
+  p.push(canalN ? flecha(-.08, 0, -1, 0, .12) : flecha(.2, 0, 1, 0, .12));
+  if (letras) p.push(txt('G', -.9, .0, .2), txt('D', .45, -.62, .2), txt('S', .45, .68, .2));
+  return p;
+};
+const jfet = (canalN, letras = false) => {
+  const p = [C(0, 0, .5), L([-.05, -.35], [-.05, .35]), L([-.05, -.25], [.25, -.25], [.25, -.8]), L([-.05, .25], [.25, .25], [.25, .8]), L([-.85, .2], [-.05, .2])];
+  p.push(canalN ? flecha(-.08, .2, 1, 0, .12) : flecha(-.6, .2, -1, 0, .12));
+  if (letras) p.push(txt('G', -.9, -.02, .2), txt('D', .45, -.62, .2), txt('S', .45, .68, .2));
+  return p;
+};
+const pinesCI = (w = .9, h = .5, n = 4) => { const out = [rect(-w / 2, -h / 2, w, h)]; for (let i = 0; i < n; i++) { const x = -w / 2 + (i + .5) * w / n; out.push(L([x, -h / 2], [x, -h / 2 - .2]), L([x, h / 2], [x, h / 2 + .2])); } return out; };
+const ondaSeno = (cx = 0, cy = 0, w = .4, h = .12) => L(...Array.from({ length: 17 }, (_, i) => [cx - w / 2 + w * i / 16, cy - h * Math.sin(i / 16 * 2 * Math.PI)]));
+const fuenteC = (adentro) => [C(0, 0, .38), ...pat(-.38, .38), ...adentro];
+const tierraPlana = () => [L([0, -.6], [0, .05]), ...tierraLineas(.05, .45)];
+const parlante = () => [rect(-.45, -.18, .2, .36), Lc([-.25, -.18], [.15, -.45], [.15, .45], [-.25, .18])];
+const contactoX = (cerrado) => cerrado ? [L([-1, 0], [-.35, 0]), L([-.35, 0], [.4, .08]), L([.25, 0], [1, 0]), L([.25, 0], [.25, -.2])] : contactoNA();
+
+const pack10 = [
+  sym('Antena', [L([0, -.6], [0, .7]), L([-.4, -.65], [0, -.15], [.4, -.65])], 'Aerial (antenna)'),
+  sym('Amperímetro', instr('A'), 'Ammeter'),
+  sym('Amplificador', [Lc([.35, -.35], [-.35, 0], [.35, .35]), ...pat(-.35, .35)], 'Amplifier'),
+  sym('Batería de celdas', [...pat(-.55, .55), ...[-.42, -.14, .14, .42].flatMap(x => celda(x, .35, .2))], 'Battery of primary or secondary cells'),
+  sym('Batería solar', [...[-.36, -.12, .12, .36].map(x => F([x - .07, -.15], [x + .07, -.15], [x + .07, .3], [x - .07, .3])), L([-.6, .07], [.6, .07]), txt('−', -.8, .07, .3), txt('+', .8, .07, .3),
+    ...flechaDiag(-.45, -.75, -.15, -.3, .12), ...flechaDiag(.0, -.75, .3, -.3, .12)], 'Battery, solar'),
+  sym('Corriente continua', [L([-.5, 0], [.5, 0])], 'Direct current or steady voltage'),
+  sym('Corriente alterna', [ondaSeno(0, 0, .9, .18)], 'Alternating current'),
+  sym('Celda primaria o secundaria', [...celda(0), ...pat(-.06, .06)], 'Primary or secondary cell'),
+  sym('Interruptor automático', [L([-.9, 0], [-.3, 0]), C(-.3, 0, .05, true), arc(0, 0, .3, 180, 360, 14), C(.3, 0, .05, true), L([.3, 0], [.9, 0])], 'Circuit breaker'),
+  sym('Capacitor (símbolo general)', capV()),
+  sym('Capacitor polarizado', [...capV(), txt('+', .3, -.3, .26)], 'Capacitor, polarised'),
+  sym('Capacitor electrolítico polarizado', [L([-.12, -.3], [-.12, .3]), F([.06, -.3], [.16, -.3], [.16, .3], [.06, .3]), ...pat(-.12, .06), txt('+', -.32, -.35, .26)], 'Capacitor, polarised electrolytic'),
+  sym('Capacitor de ajuste preestablecido', [...capV(), ...tBar(-.35, .35, .35, -.35)], 'Capacitor with preset adjustment'),
+  sym('Reloj', [C(0, 0, .45), L([0, -.3], [0, 0], [.22, 0])], 'Clock (and slave clock)'),
+  sym('Contacto normal abierto', contactoNA(), 'Make contact (normally open)'),
+  sym('Contacto normal cerrado', [L([-1, 0], [-.35, 0]), L([-.35, 0], [.35, .1]), L([.25, 0], [1, 0]), L([.25, 0], [.25, -.18])], 'Break contact (normally closed)'),
+  sym('Contacto de apertura (unidad)', [L([-1, 0], [-.35, 0]), L([-.4, 0], [.35, -.08]), L([.3, 0], [1, 0]), Lc([-.12, -.04], [-.02, -.16], [.08, -.04])], 'Break contact-unit'),
+  sym('Fuente de corriente constante', [C(0, 0, .3), ...pat(-.3, .3), L([-.2, 0], [.1, 0]), flecha(.2, 0, 1, 0, .12)], 'Source, constant-current'),
+  sym('Diodo', diodo(), 'PN diode'),
+  sym('Fotodiodo', [...diodo(), ...flechasLuz(false, -.25, -.4)], 'Light-sensitive PN diode'),
+  sym('LED (diodo emisor de luz)', [...diodo(), ...flechasLuz(true, .0, -.32)], 'Light-emitting diode (LED)'),
+  sym('Diodo Zener', [tri(0, .25, false), ...barraZener(), ...pat(-.25, .25)], 'Zener diode'),
+  sym('Tierra', tierraPlana(), 'Earth'),
+  sym('Timbre eléctrico', [arc(0, 0, .45, 180, 360, 16), L([-.45, 0], [.45, 0]), L([-.2, 0], [-.2, .55]), L([.2, 0], [.2, .55])], 'Electric bell'),
+  sym('Auricular', [L([-.3, .05], [-.3, -.3], [.3, -.3], [.3, .05]), L([-.6, .05], [.6, .05])], 'Earphone (receiver)'),
+  sym('Fusible', [rect(-.3, -.12, .6, .24), L([-1, 0], [1, 0])], 'Fuse'),
+  sym('Galvanómetro', [C(0, 0, .45), L([0, .3], [0, -.2]), flecha(0, -.3, 0, -1, .14)], 'Galvanometer'),
+  sym('Compuerta NAND', gate('nand'), 'NAND gate'), sym('Compuerta NOR', gate('nor'), 'NOR gate'), sym('Compuerta NOT (inversor)', gate('not'), 'NOT gate'),
+  sym('Compuerta OR', gate('or'), 'OR gate'), sym('Compuerta AND', gate('and'), 'AND gate'),
+  sym('Generador', [rect(-.4, -.4, .8, .8), txt('G', 0, 0, .36)], 'Generator'),
+  sym('Calefactor', [rect(-.4, -.13, .8, .26), ...[-.2, 0, .2].map(x => L([x, -.13], [x, .13])), ...pat(-.4, .4)], 'Heater'),
+  sym('Inductor con núcleo', [L([-.5, -.4], [-.5, .1]), L([.5, -.4], [.5, .1]), humps(4, .12, -.48, .1, false), L([-.5, .32], [.5, .32])], 'Inductor + core'),
+  sym('Circuito integrado (general)', [...pinesCI(.9, .5, 4), L([-.75, 0], [-.45, 0]), L([.45, 0], [.75, 0])], 'Integrated circuit, general'),
+  sym('Lámpara de señalización', [C(0, 0, .45), ...X(0, 0, .32)], 'Signal lamp'),
+  sym('Lámpara de filamento', [C(0, 0, .38), ...pat(-.38, .38, 0, -.9, .9), arc(0, 0, .2, 0, 180, 12), L([-.38, 0], [-.2, 0]), L([.2, 0], [.38, 0])], 'Filament lamp'),
+  sym('Altavoz', [rect(-.5, .1, 1, .2), Lc([-.5, .1], [-.3, -.4], [.3, -.4], [.5, .1])], 'Loudspeaker'),
+  sym('Lámpara de neón', [C(0, 0, .38), ...pat(-.38, .38, 0, -.9, .9), L([-.38, 0], [-.12, 0]), L([.12, 0], [.38, 0]), L([-.12, -.15], [-.12, .15]), L([.12, -.15], [.12, .15]), C(.05, -.22, .05, true)], 'Neon lamp'),
+  sym('Motor', instr('M'), 'Motor'),
+  sym('Micrófono', [C(0, 0, .38), L([-.5, .38], [.5, .38])], 'Microphone'),
+  sym('Osciloscopio', [C(0, 0, .45), L([-.28, .1], [.05, -.18], [.05, .15], [.28, -.12])], 'Oscilloscope'),
+  sym('Polaridad positiva', [L([-.3, 0], [.3, 0]), L([0, -.3], [0, .3])], 'Positive polarity'),
+  sym('Polaridad negativa', [L([-.3, 0], [.3, 0])], 'Negative polarity'),
+  sym('Clavija macho', [L([-.9, 0], [.2, 0]), F([.2, -.08], [.85, -.08], [.85, .08], [.2, .08])], 'Plug (male)'),
+  sym('Potenciómetro', [L([0, -.9], ...zigPts(1.1, .15, 8).map(([x, y]) => [y, x]), [0, .9]), L([.6, 0], [.22, 0]), flecha(.14, 0, -1, 0, .13)], 'Potentiometer'),
+  sym('Rectificador', diodo(), 'Rectifier'),
+  sym('Resistencia fija', resR(), 'Fixed resistor'),
+  sym('Resistencia variable', [...resR(), ...flechaDiag(-.45, .35, .45, -.35)], 'Variable resistor'),
+  sym('Resistencia con contacto móvil', [...resR(), L([.5, -.45], [0, -.45], [0, -.25]), flecha(0, -.14, 0, 1, .12)], 'Resistor with moving contact'),
+  sym('Contacto de relé (cierre)', [...contactoNA(), Lc([.35, -.02], [.45, -.14], [.55, -.02])], 'Relay make contact-unit'),
+  sym('Resistencia dependiente de la luz (LDR)', [...resR(), ...flechasLuz(false, -.4, -.35)], 'Light-dependent resistor (LDR)'),
+  sym('Bobina de relé y contacto', [rect(-.6, -.25, .6, .5), L([-.3, -.55], [-.3, -.25]), L([-.3, .25], [-.3, .55]), L([.35, -.55], [.35, -.2]), L([.35, .5], [.55, -.15]), L([.35, .5], [.35, .6])], 'Relay coil and switch'),
+  sym('Reóstato', [L([-1, 0], ...zigPts(.9, .16, 7), [1, 0]), ...flechaDiag(-.5, .45, .5, -.45)], 'Rheostat'),
+  sym('Toma hembra (socket)', [arc(-.2, 0, .22, -90, 90, 12), L([.02, 0], [.7, 0])], 'Socket (female)'),
+  sym('Fuente de tensión constante', [C(0, 0, .3), ...pat(-.3, .3), txt('+', -.5, -.35, .26), txt('−', .5, -.35, .26)], 'Source, constant-voltage'),
+  sym('Generador de señal', [C(0, 0, .35), ...pat(-.35, .35), ondaSeno(0, 0, .4, .1)], 'Signal generator'),
+  sym('Termistor', [...resR(), L([-.4, .35], [.25, -.35], [.45, -.35])], 'Thermistor'),
+  sym('Transformador', [humps(4, .12, -.48, -.2, false), humps(4, .12, -.48, .2, true), L([-.5, -.62], [-.5, -.2]), L([.5, -.62], [.5, -.2]), L([-.5, .2], [-.5, .62]), L([.5, .2], [.5, .62])], 'Transformer'),
+  sym('Transistor PNP', bjt(false), 'PNP transistor'),
+  sym('Transistor NPN', bjt(true), 'NPN transistor'),
+  sym('Variabilidad', flechaDiag(-.4, .45, .4, -.45), 'Variability'),
+  sym('Divisor de tensión con contacto móvil', [...resR(), L([.55, -.5], [0, -.5], [0, -.25]), flecha(0, -.14, 0, 1, .12)], 'Voltage divider with moving contact'),
+  sym('Voltímetro', instr('V'), 'Voltmeter'),
+  sym('Bobinado', [humps(4, .12, -.48, 0, true)], 'Winding'),
+  sym('Vatímetro', [rect(-.4, -.4, .8, .8), txt('W', 0, 0, .34)], 'Wattmeter'),
+];
+
+const reg = (izq, der, abajoTxt) => [rect(-.6, -.3, 1.2, .6), txt(izq, -.38, -.14, .16), txt(der, .38, -.14, .16), ...(abajoTxt ? [txt(abajoTxt, 0, .12, .16), L([0, .3], [0, .55])] : [L([0, .3], [0, .55])])];
+const pack11 = [
+  sym('Resistencia', resZ(), 'Resistor'),
+  sym('Potenciómetro', [...resZ(), ...flechaDiag(-.45, .3, .45, -.35)], 'Potentiometer'),
+  sym('Capacitor electrolítico', [...capV(), txt('+', -.25, -.32, .24)], 'Capacitor (electrolytic)'),
+  sym('Capacitor no polarizado', capV(), 'Capacitor (non-polar)'),
+  sym('Capacitor cerámico', capV(.06, .24), 'Ceramic capacitor'),
+  sym('Diodo', diodo(true), 'Diode'),
+  sym('Diodo Zener', [tri(0, .25, true), ...barraZener(), ...pat(-.25, .25)], 'Zener diode'),
+  sym('LED', [...diodo(true), ...flechasLuz(true, .05, -.32)], 'LED'),
+  sym('Fotodiodo', [...diodo(true), ...flechasLuz(false, -.2, -.4)], 'Photodiode'),
+  sym('Diodo Schottky', [tri(0, .25, true), ...barraSchottky(), ...pat(-.25, .25)], 'Schottky diode'),
+  sym('Puente rectificador', [Lc([0, -.6], [.6, 0], [0, .6], [-.6, 0]), ...[[-.3, -.3, 1, 1], [.3, -.3, 1, -1], [-.3, .3, -1, 1], [.3, .3, -1, -1]].map(([x, y, a, b]) => { const d = [a * .7071, b * .7071 * -1];
+    return F([x + d[0] * .12, y - d[1] * .12], [x - d[0] * .08 + d[1] * .1, y + d[1] * .08 + d[0] * .1], [x - d[0] * .08 - d[1] * .1, y + d[1] * .08 - d[0] * .1]); })], 'Bridge rectifier'),
+  sym('Diodo varactor', [tri(-.05, .25, true), L([.2, -.25], [.2, .25]), L([.32, -.25], [.32, .25]), ...pat(-.3, .32)], 'Varactor diode'),
+  sym('Transistor NPN', bjt(true, true), 'Transistor (NPN)'),
+  sym('Transistor PNP', bjt(false, true), 'Transistor (PNP)'),
+  sym('MOSFET canal N', mosfet(true, true, true), 'MOSFET (N-channel)'),
+  sym('MOSFET canal P', mosfet(false, true, true), 'MOSFET (P-channel)'),
+  sym('JFET canal N', jfet(true, true), 'JFET (N-channel)'),
+  sym('JFET canal P', jfet(false, true), 'JFET (P-channel)'),
+  sym('SCR / tiristor', [...diodo(true), L([.25, .25], [.5, .5]), txt('G', .65, .55, .2), txt('A', -.75, -.25, .2), txt('K', .75, -.25, .2)], 'SCR / thyristor'),
+  sym('DIAC', [F([-.25, -.25], [.25, -.05], [-.25, .15]), F([.25, -.15], [-.25, .05], [.25, .25]), L([-.25, -.3], [-.25, .3]), L([.25, -.3], [.25, .3]), ...pat(-.25, .25)], 'DIAC'),
+  sym('TRIAC', [F([-.25, -.25], [.25, -.05], [-.25, .15]), F([.25, -.15], [-.25, .05], [.25, .25]), L([-.25, -.3], [-.25, .3]), L([.25, -.3], [.25, .3]), ...pat(-.25, .25), L([.25, .2], [.5, .5]), txt('MT2', .62, -.3, .16), txt('MT1', -.62, -.3, .16), txt('G', .65, .58, .18)], 'TRIAC'),
+  sym('Inductor', inductor(4), 'Inductor'),
+  sym('Choque (inductor RF)', [...inductor(4), L([-.48, -.22], [.48, -.22]), L([-.48, -.3], [.48, -.3])], 'Choke (RF inductor)'),
+  sym('Transformador', [bobinaV(4, .1, -.25, -.4, false), bobinaV(4, .1, .25, -.4, true), L([-.04, -.45], [-.04, .45]), L([.04, -.45], [.04, .45])], 'Transformer'),
+  sym('Cristal (cuarzo)', [rect(-.12, -.25, .24, .5), L([-.25, -.3], [-.25, .3]), L([.25, -.3], [.25, .3]), ...pat(-.25, .25)], 'Crystal'),
+  sym('Resonador cerámico', [L([-1, 0], [-.3, 0], [-.3, -.3], [.3, -.3], [.3, 0], [1, 0])], 'Ceramic resonator'),
+  sym('Circuito integrado (CI)', [rect(-.75, -.3, 1.5, .6), ...[-.5, -.17, .17, .5].flatMap(x => [L([x, -.3], [x, -.5]), L([x, .3], [x, .5])])], 'IC (integrated circuit)'),
+  sym('Amplificador operacional', opamp(), 'Op-amp'),
+  sym('Comparador', [...opamp(), L([-.05, -.12], [.08, -.12], [.08, .12], [.2, .12])], 'Comparator'),
+  sym('Regulador de tensión lineal (7805)', reg('IN', 'OUT', 'GND'), 'Voltage regulator (linear, e.g. 7805)'),
+  sym('Regulador LDO', reg('IN', 'OUT', 'GND'), 'LDO regulator'),
+  sym('Regulador de tensión (LM317)', [rect(-.6, -.3, 1.2, .6), txt('IN', -.38, 0, .16), txt('OUT', .38, -.12, .16), L([0, .3], [0, .55])], 'Voltage regulator (LM317)'),
+  sym('Optoacoplador', [...[[-.7, -.4], [.7, -.4], [.7, .4], [-.7, .4]].map((p, i, a) => { const q = a[(i + 1) % 4]; const pts = []; const n = 8; for (let k = 0; k < n; k += 2) pts.push(L([p[0] + (q[0] - p[0]) * k / n, p[1] + (q[1] - p[1]) * k / n], [p[0] + (q[0] - p[0]) * (k + 1) / n, p[1] + (q[1] - p[1]) * (k + 1) / n])); return pts; }).flat(),
+    F([-.55, -.12], [-.3, -.12], [-.42, .1]), L([-.55, .12], [-.3, .12]), L([-.2, 0], [0, 0]), flecha(.08, 0, 1, 0, .1), L([.25, -.2], [.25, .2]), L([.25, -.08], [.5, -.25]), L([.25, .08], [.5, .25]), flecha(.5, .25, .4, .26, .1)], 'Optocoupler'),
+  sym('Fototransistor', [...bjt(true, false), ...flechasLuz(false, -.85, -.55)], 'Phototransistor'),
+  sym('LDR (fotorresistencia)', [C(0, 0, .45), L([-1, 0], ...zigPts(.6, .12, 6), [1, 0])], 'LDR (photoresistor)'),
+  sym('Termistor NTC', [...resZ(), ...tBar(-.45, .3, .45, -.35), txt('−t°', .78, -.35, .2)], 'Thermistor (NTC)'),
+  sym('Termistor PTC', [...resZ(), ...tBar(-.45, .3, .45, -.35), txt('+t°', .78, -.35, .2)], 'Thermistor (PTC)'),
+  sym('Varistor (MOV)', [...resR(), L([-.35, .3], [.2, -.3], [.4, -.3])], 'Varistor (MOV)'),
+  sym('Sensor de efecto Hall', [rect(-.55, -.35, 1.1, .7), txt('Vcc', -.28, -.15, .16), txt('Out', .3, -.15, .16), txt('GND', 0, .15, .16)], 'Hall effect sensor'),
+  sym('Sensor infrarrojo (reflectivo)', [...[-.55].flatMap(x => [tri(x, .16, false), L([x + .16, -.16], [x + .16, .16]), ...flechasLuz(true, x, -.22).map(o => o)]), L([.3, -.25], [.3, .25]), L([.3, -.1], [.55, -.25]), L([.3, .1], [.55, .25]), L([.65, -.3], [.75, -.3], [.75, .3], [.65, .3])], 'IR sensor (reflective)'),
+  sym('Sensor ultrasónico', [tri(-.45, .2, false), L([-.25, -.2], [-.25, .2]), ...[0, .2, .4].map(x => arc(x - .2, 0, .25 + x * .2, -40, 40, 8))], 'Ultrasonic sensor'),
+  sym('Micrófono (condensador)', [L([-.25, -.35], [-.25, .35]), arc(-.25, 0, .35, -90, 90, 14), L([.1, 0], [.6, 0])], 'Microphone (condenser)'),
+  sym('Buzzer (activo)', [L([-.1, -.35], [-.1, .35]), arc(-.1, 0, .35, -90, 90, 14), txt('+', -.4, -.2, .22), L([-.5, .1], [-.3, .1])], 'Buzzer (active)'),
+  sym('Parlante', parlante(), 'Speaker'),
+  sym('Interruptor SPST', [L([-1, 0], [-.4, 0]), C(-.35, 0, .05), L([-.3, -.02], [.25, -.28]), C(.35, 0, .05), L([.4, 0], [1, 0])], 'Switch (SPST)'),
+  sym('Interruptor SPDT', [L([-1, 0], [-.4, 0]), C(-.35, 0, .05), L([-.3, -.02], [.25, -.28]), C(.35, -.25, .05), C(.35, .1, .05), L([.4, -.25], [1, -.25]), L([.4, .1], [1, .1])], 'Switch (SPDT)'),
+  sym('Pulsador', [L([-1, .1], [-.4, .1]), C(-.35, .1, .05), C(.35, .1, .05), L([.4, .1], [1, .1]), L([-.35, -.1], [.35, -.1]), L([0, -.1], [0, -.35]), L([-.15, -.35], [.15, -.35])], 'Push button switch'),
+  sym('Interruptor DIP', [...[-.6, -.2, .2, .6].flatMap(x => [L([x, -.35], [x, -.1]), C(x, -.06, .04, true), L([x, -.06], [x + .1, .15]), L([x, .1], [x, .35])])], 'DIP switch'),
+  sym('Relé', [rect(-.75, -.35, .35, .7), bobinaV(3, .1, -.57, -.3, true), L([.2, -.4], [.2, .4]), L([.2, -.15], [.6, -.15]), L([.2, .25], [.55, .05]), L([.6, -.4], [.6, -.15])], 'Relay'),
+  sym('Fusible', [rect(-.35, -.12, .7, .24), L([-1, 0], [1, 0])], 'Fuse'),
+  sym('Batería', [...celda(-.15), ...celda(.15), ...pat(-.21, .21), txt('+', -.38, -.38, .22)], 'Battery'),
+  sym('Motor DC', instr('M', .35), 'DC motor'),
+  sym('Ventilador DC', instr('F', .35), 'DC fan'),
+  sym('Display de 7 segmentos', [L([-.18, -.4], [.18, -.4], [.18, .4], [-.18, .4], [-.18, -.4]), L([-.18, 0], [.18, 0])], '7-segment display'),
+  sym('Display LCD (16×2)', [rect(-.85, -.2, 1.7, .4), ...Array.from({ length: 16 }, (_, i) => L([-.8 + i * .107, .2], [-.8 + i * .107, .32]))], 'LCD display (16x2)'),
+  sym('Conector macho', [L([-.95, 0], [.95, 0]), ...[-.8, -.4, 0, .4, .8].map(x => C(x, 0, .07))], 'Connector (male)'),
+  sym('Conector hembra', [L([-.95, 0], [.95, 0]), ...[-.8, -.4, 0, .4, .8].map(x => C(x, 0, .07, true))], 'Connector (female)'),
+  sym('Bornera', [rect(-.75, -.25, 1.5, .5), ...[-.5, 0, .5].flatMap(x => [C(x, 0, .17), L([x - .1, .1], [x + .1, -.1])]), L([-.25, -.25], [-.25, .25]), L([.25, -.25], [.25, .25])], 'Terminal block'),
+  sym('Módulo conversor DC-DC', [rect(-.75, -.3, 1.5, .6), txt('IN', -.55, -.14, .14), txt('OUT', .52, -.14, .14), txt('DC-DC', 0, .05, .2)], 'DC-DC converter module'),
+  sym('Celda solar (fotovoltaica)', [...diodo(true), ...flechasLuz(false, -.2, -.4)], 'Solar cell (photovoltaic)'),
+];
+
+const pack12 = [
+  sym('Línea de bus de entrada', [L([-.9, 0], [-.4, 0]), Lc([-.4, 0], [-.15, -.15], [.3, -.15], [.3, .15], [-.15, .15])], 'Input bus line'),
+  sym('Línea de bus de salida', [L([.4, 0], [.9, 0]), Lc([-.3, -.15], [.15, -.15], [.4, 0], [.15, .15], [-.3, .15])], 'Output bus line'),
+  sym('Terminal', [L([-.6, -.2], [.4, -.2]), L([-.6, .1], [.4, .1]), L([.35, .1], [.5, .25]), C(.45, -.2, .05)], 'Terminal'),
+  sym('Línea de bus', [Lc([-.5, -.12], [.25, -.12], [.25, -.25], [.6, 0], [.25, .25], [.25, .12], [-.5, .12])], 'Bus line'),
+  sym('Fuente de alterna', [C(0, 0, .45), ondaSeno(0, 0, .5, .14)], 'AC supply'),
+  sym('Fuente de continua', [C(0, 0, .45), txt('+', -.18, 0, .3), txt('−', .18, 0, .3)], 'DC supply'),
+  sym('Fuente de corriente constante', [L([-.5, 0], [.25, 0]), flecha(.4, 0, 1, 0, .16)], 'Constant current source'),
+  sym('Diodo Schottky', [tri(0, .28, true), ...barraSchottky(.28), ...pat(-.28, .28)], 'Schottky diode'),
+  sym('Diodo láser', [C(0, 0, .5), L([0, -.85], [0, -.25]), F([-.25, -.2], [.25, -.2], [0, .2]), L([-.25, .2], [.25, .2]), L([-.25, .3], [.25, .3]), L([0, .2], [0, .85]), L([.35, -.55], [.6, -.65]), flecha(.66, -.68, 1, -.4, .08), L([.35, -.45], [.6, -.55]), flecha(.66, -.58, 1, -.4, .08)], 'Laser diode'),
+  sym('JFET canal P', jfet(false, true), 'P-channel JFET'),
+  sym('Transistor Darlington', [C(0, 0, .55), L([-.45, -.2], [-.45, .2]), L([-.85, 0], [-.45, 0]), L([-.45, -.1], [-.15, -.3], [-.15, -.85]), L([-.45, .1], [.05, .15]), L([.05, -.15], [.05, .4]), L([.05, -.05], [.3, -.25], [.3, -.85]), L([.05, .25], [.3, .45], [.3, .85]), flecha(.3, .45, .4, .3, .1)], 'Darlington transistor'),
+  sym('Compuerta XNOR', gate('xnor'), 'Exnor'),
+  sym('Buffer', gate('buffer'), 'Buffer'),
+  sym('Fuente de corriente controlada', [Lc([0, -.5], [.5, 0], [0, .5], [-.5, 0]), L([-.25, 0], [.12, 0]), flecha(.24, 0, 1, 0, .12)], 'Controlled current source'),
+  sym('Fuente de tensión controlada', [Lc([0, -.5], [.5, 0], [0, .5], [-.5, 0]), txt('+', -.2, 0, .26), txt('−', .2, 0, .26)], 'Controlled voltage source'),
+  sym('Batería de una celda', [...celda(0), ...pat(-.06, .06, 0, -.6, .6)], 'Single cell battery'),
+  sym('Batería de varias celdas', [...celda(-.3), ...celda(0), ...celda(.3), ...pat(-.36, .36, 0, -.8, .8), txt('+', -.5, -.35, .2), txt('−', .5, -.35, .2)], 'Multi cell battery'),
+  sym('Pulsador normal abierto', [L([-.9, .1], [-.4, .1]), C(-.35, .1, .05), C(.35, .1, .05), L([.4, .1], [.9, .1]), L([-.35, -.12], [.35, -.12]), L([0, -.12], [0, -.32])], 'Push button (normally open)'),
+  sym('Pulsador normal cerrado', [L([-.9, 0], [-.4, 0]), C(-.35, 0, .05), C(.35, 0, .05), L([.4, 0], [.9, 0]), L([-.35, .1], [.35, .1]), L([0, .1], [0, .3])], 'Push button (normally closed)'),
+  sym('Interruptor SPST', [L([-.9, 0], [-.4, 0]), C(-.35, 0, .05), L([-.3, -.02], [.25, -.28]), C(.35, 0, .05), L([.4, 0], [.9, 0])], 'SPST switch'),
+  sym('Interruptor SPDT', [L([-.9, 0], [-.4, 0]), C(-.35, 0, .05), L([-.3, -.02], [.28, -.2]), C(.35, -.25, .05), C(.35, .1, .05), L([.4, -.25], [.9, -.25]), L([.4, .1], [.9, .1])], 'SPDT switch'),
+  sym('Interruptor DPST', [...[-.3, .3].flatMap(y => [L([-.9, y], [-.4, y]), C(-.35, y, .05), L([-.3, y - .02], [.25, y - .25]), C(.35, y, .05), L([.4, y], [.9, y])]), L([0, -.15], [0, -.08]), L([0, .02], [0, .1])], 'DPST switch'),
+  sym('Interruptor DPDT', [...[-.35, .35].flatMap(y => [L([-.9, y], [-.4, y]), C(-.35, y, .05), L([-.3, y - .02], [.28, y - .2]), C(.35, y - .22, .05), C(.35, y + .1, .05), L([.4, y - .22], [.9, y - .22]), L([.4, y + .1], [.9, y + .1])]), L([0, -.4], [0, -.32]), L([0, -.2], [0, -.12])], 'DPDT switch'),
+  sym('Diodo túnel', [tri(0, .25, false), L([.25, -.25], [.25, .25]), L([.25, -.25], [.15, -.25]), L([.25, .25], [.15, .25]), ...pat(-.25, .25)], 'Tunnel diode'),
+  sym('Transistor NPN', bjt(true, true), 'NPN'),
+  sym('MOSFET de realce (canal N)', mosfet(true, true), 'Enhancement MOSFET'),
+  sym('MOSFET de realce (canal P)', mosfet(false, true), 'Enhancement MOSFET'),
+  sym('Fotodarlington', [C(0, 0, .55), L([-.45, -.2], [-.45, .2]), L([-.45, -.1], [-.15, -.3], [-.15, -.85]), L([-.45, .1], [.05, .15]), L([.05, -.15], [.05, .4]), L([.05, -.05], [.3, -.25], [.3, -.85]), L([.05, .25], [.3, .45], [.3, .85]), flecha(.3, .45, .4, .3, .1), ...flechasLuz(false, -.85, -.65)], 'Photo Darlington'),
+  sym('Flip-flop', [rect(-.4, -.55, .8, 1.1), txt('D', -.25, -.35, .2), txt('Q', .25, -.15, .2), txt('CLK', -.12, .38, .16), L([-.8, -.35], [-.4, -.35]), L([-.8, .38], [-.4, .38]), L([.4, -.15], [.8, -.15])], 'Flip flop'),
+  sym('Buffer tri-estado', [Lc([-.2, -.15], [.25, 0], [-.2, .15]), L([-.6, 0], [-.2, 0]), L([.25, 0], [.6, 0]), L([0, -.5], [0, -.08]), txt('EN', -.3, -.4, .16)], 'Tri-state buffer'),
+  sym('Capacitor pasante', [L([-.9, 0], [.9, 0]), L([-.08, -.3], [-.08, .3]), arc(.25, 0, .3, 140, 220, 10)], 'Feed through capacitor'),
+  sym('Generador sinusoidal', [C(0, 0, .4), ...pat(-.4, .4), ondaSeno(0, 0, .45, .12)], 'Sinusoidal generator'),
+  sym('Generador de pulsos', [C(0, 0, .4), ...pat(-.4, .4), L([-.25, .1], [-.1, .1], [-.1, -.12], [.1, -.12], [.1, .1], [.25, .1])], 'Pulse generator'),
+  sym('Onda triangular', [C(0, 0, .4), ...pat(-.4, .4), L([-.25, .1], [0, -.15], [.25, .1])], 'Triangular wave'),
+  sym('Tierra', tierraPlana(), 'Ground'),
+  sym('Tierra de señal', [L([0, -.6], [0, .1]), L([-.4, .1], [.4, .1]), L([-.3, .1], [-.42, .35]), L([0, .1], [-.12, .35]), L([.3, .1], [.18, .35])], 'Signal ground'),
+  sym('Tierra de chasis', [L([0, -.6], [0, 0]), Lc([-.35, 0], [.35, 0], [0, .45])], 'Chassis ground'),
+  sym('Diodo de unión PN', diodo(), 'PN junction diode'),
+  sym('Diodo Zener', [tri(0, .25, false), ...barraZener(), ...pat(-.25, .25)], 'Zener diode'),
+  sym('Fotodiodo', [C(0, 0, .5), ...diodo(false, .22, false), ...pat(-.22, .22, 0, -.9, .9), ...flechasLuz(false, .1, -.45)], 'Photodiode'),
+  sym('Tiristor', [C(0, 0, .5), tri(0, .25, true), L([.25, -.25], [.25, .25]), ...pat(-.25, .25, 0, -.9, .9), L([.25, -.2], [.55, -.55])], 'Thyristor'),
+  sym('Transistor PNP', bjt(false, true), 'PNP'),
+  sym('MOSFET de empobrecimiento', mosfet(true, false), 'Depletion MOSFET'),
+  sym('Compuerta AND', gate('and'), 'And gate'), sym('Compuerta OR', gate('or'), 'Or gate'), sym('Compuerta NAND', gate('nand'), 'Nand gate'),
+  sym('Capacitor variable', [...capV(), ...flechaDiag(-.4, .35, .4, -.35)], 'Variable capacitor'),
+  sym('Varistor', [...resR(), L([-.35, .3], [.2, -.3], [.4, -.3])], 'Varistor'),
+  sym('Magnetorresistencia', [...resZ(), L([-.4, .3], [.35, -.3])], 'Magneto resistor'),
+  sym('LDR', [C(0, 0, .45), L([-1, 0], ...zigPts(.6, .12, 6), [1, 0]), ...flechasLuz(false, .15, -.55)], 'LDR'),
+  sym('Resistencia con derivación', [...resZ(), L([0, .17], [0, .5])], 'Tapped resistor'),
+  sym('Atenuador', [...resZ(), L([0, -.17], [0, -.4]), L([.0, .17], [0, .45])], 'Attenuator'),
+  sym('Memristor', [rect(-.45, -.17, .9, .34), L([-.45, 0], [-.3, 0], [-.3, -.08], [-.15, -.08], [-.15, .08], [0, .08], [0, -.08], [.15, -.08], [.15, .08], [.3, .08], [.3, 0]), F([.3, -.17], [.45, -.17], [.45, .17], [.3, .17]), ...pat(-.45, .45)], 'Memristor'),
+  sym('LED', [C(0, 0, .5), ...diodo(false, .22, false), ...pat(-.22, .22, 0, -.9, .9), ...flechasLuz(true, .1, -.4)], 'LED'),
+  sym('Diodo varactor', [C(0, 0, .5), tri(-.05, .22, false), L([.17, -.22], [.17, .22]), L([.27, -.22], [.27, .22]), ...pat(-.27, .27, 0, -.9, .9)], 'Varactor diode'),
+  sym('Diodo Shockley', [tri(0, .22, false), L([.22, -.22], [.22, .22]), L([-.22, -.22], [-.22, .22]), ...pat(-.22, .22)], 'Shockley diode'),
+  sym('Diodo de corriente constante', [tri(0, .25, true), L([.25, -.25], [.25, .25]), L([.15, -.25], [.35, -.25]), L([.15, .25], [.35, .25]), ...pat(-.25, .25)], 'Constant current diode'),
+  sym('JFET canal N', jfet(true, true), 'N-channel JFET'),
+  sym('Fototransistor', [...bjt(true, false), ...flechasLuz(false, -.8, -.55)], 'Phototransistor'),
+  sym('Compuerta NOR', gate('nor'), 'Nor gate'), sym('Compuerta NOT', gate('not'), 'Not gate'), sym('Compuerta XOR', gate('xor'), 'Exor'),
+  sym('Amplificador básico', [Lc([-.35, -.4], [.4, 0], [-.35, .4]), L([-.8, 0], [-.35, 0]), L([.4, 0], [.8, 0])], 'Basic amplifier'),
+  sym('Amplificador operacional', opamp(), 'Operational amplifier'),
+  sym('Antena', [L([0, -.5], [0, .7]), L([-.35, -.65], [0, -.1], [.35, -.65])], 'Antenna'),
+  sym('Antena de cuadro (loop)', [L([-.15, .7], [-.15, -.1], [-.4, -.1], [-.4, -.6], [.3, -.6], [.3, -.1], [.15, -.1], [.15, .7]), rect(-.05, -.42, .45, .2)], 'Loop antenna'),
+  sym('Antena dipolo', [L([-.12, .7], [-.12, -.55], [-.35, -.55]), L([.12, .7], [.12, -.55], [.35, -.55])], 'Dipole antenna'),
+  sym('Transformador', [bobinaV(4, .1, -.25, -.4, false), bobinaV(4, .1, .25, -.4, true)], 'Transformer'),
+  sym('Transformador con núcleo de hierro', [bobinaV(4, .1, -.3, -.4, false), bobinaV(4, .1, .3, -.4, true), L([-.05, -.45], [-.05, .45]), L([.05, -.45], [.05, .45])], 'Iron core'),
+  sym('Transformador con derivación central', [bobinaV(4, .1, -.3, -.4, false), bobinaV(4, .1, .3, -.4, true), L([-.05, -.45], [-.05, .45]), L([.05, -.45], [.05, .45]), L([.4, 0], [.6, 0])], 'Center tapped'),
+  sym('Resistencia fija', resR(), 'Fixed resistor'),
+  sym('Reóstato', [...resZ(), ...flechaDiag(-.45, .3, .45, -.35)], 'Rheostat'),
+  sym('Resistencia de ajuste (preset)', [...resZ(), ...tBar(-.45, .3, .45, -.35)], 'Preset'),
+  sym('Capacitor no polarizado', [L([-1, 0], [-.08, 0]), L([-.08, -.3], [-.08, .3]), arc(.3, 0, .3, 145, 215, 10), L([.06, 0], [1, 0])], 'Non polarized capacitor'),
+  sym('Capacitor polarizado', [...capV(), txt('+', -.28, -.3, .22)], 'Polarized capacitor'),
+  sym('Capacitor electrolítico', [L([-.12, -.3], [-.12, .3]), F([.06, -.3], [.16, -.3], [.16, .3], [.06, .3]), ...pat(-.12, .06)], 'Electrolytic capacitor'),
+  sym('Termistor', [...resR(), L([-.4, .3], [.25, -.3], [.45, -.3])], 'Thermistor'),
+  sym('Relé (bobina y contacto)', [bobinaV(3, .1, -.4, -.3, true), L([-.4, -.5], [-.4, -.3]), L([-.4, .3], [-.4, .5]), L([.25, -.55], [.25, -.15]), L([.25, .55], [.42, -.1]), L([.45, -.55], [.45, -.2]), L([-.15, 0], [-.05, 0]), L([.05, 0], [.15, 0]), L([.25, .55], [.25, .4])], 'Relay switch'),
+  sym('Transformador elevador', [bobinaV(3, .1, -.3, -.3, false), bobinaV(5, .08, .3, -.4, true), L([-.05, -.45], [-.05, .45]), L([.05, -.45], [.05, .45])], 'Step up transformer'),
+  sym('Transformador reductor', [bobinaV(5, .08, -.3, -.4, false), bobinaV(3, .1, .3, -.3, true), L([-.05, -.45], [-.05, .45]), L([.05, -.45], [.05, .45])], 'Step down transformer'),
+  sym('Buzzer', [L([-.35, -.2], [.35, -.2]), arc(0, -.2, .35, 0, 180, 14), L([-.15, .15], [-.15, .45]), L([.15, .15], [.15, .45])], 'Buzzer'),
+  sym('Altoparlante', parlante(), 'Loud speaker'),
+  sym('Lámpara (bombilla)', [C(0, 0, .35), ...pat(-.35, .35, 0, -.85, .85), arc(0, .05, .14, 180, 360, 10), L([-.35, 0], [-.14, .05]), L([.14, .05], [.35, 0])], 'Light bulb'),
+  sym('Motor', instr('M', .35), 'Motor'),
+  sym('Fusible', [L([-.9, 0], [-.35, 0]), ondaSeno(0, 0, .7, .12), L([.35, 0], [.9, 0])], 'Fuse'),
+  sym('Oscilador de cristal', [rect(-.12, -.25, .24, .5), L([-.25, -.3], [-.25, .3]), L([.25, -.3], [.25, .3]), ...pat(-.25, .25)], 'Crystal oscillator'),
+  sym('Inductor con núcleo de hierro', [bobinaV(5, .1, -.1, -.5, false), L([.15, -.55], [.15, .55]), L([.25, -.55], [.25, .55])], 'Iron core inductor'),
+  sym('Inductor con núcleo de ferrita', [bobinaV(5, .1, -.1, -.5, false), ...[-.5, -.25, 0, .25].map(y => L([.18, y], [.18, y + .15]))], 'Ferrite core inductors'),
+  sym('Inductor con derivación central', [humps(6, .1, -.6), ...pat(-.6, .6), L([0, 0], [0, .35])], 'Center tapped inductors'),
+  sym('Inductor variable', [bobinaV(5, .1, 0, -.5, false), ...flechaDiag(-.35, .45, .35, -.5)], 'Variable inductors'),
+  sym('Conversor analógico-digital (ADC)', [Lc([-.45, 0], [-.25, -.25], [.45, -.25], [.45, .25], [-.25, .25]), L([-.85, 0], [-.45, 0]), L([.45, 0], [.85, 0]), txt('ADC', .08, 0, .16)], 'ADC'),
+  sym('Conversor digital-analógico (DAC)', [Lc([-.45, -.25], [.25, -.25], [.45, 0], [.25, .25], [-.45, .25]), L([-.85, 0], [-.45, 0]), L([.45, 0], [.85, 0]), txt('DAC', -.08, 0, .16)], 'DAC'),
+  sym('Termocupla', [L([-.15, -.6], [-.15, .1], [0, .35]), L([.15, -.6], [.15, .1], [0, .35]), C(0, .35, .07, true), txt('+', .35, -.55, .2)], 'Thermocouple'),
+];
+
 const PACKS = [
   { file: 'eclib-planos-electricos-tabla-general', library: 'Planos eléctricos — tabla general', symbols: pack1 },
   { file: 'eclib-interruptores-y-pulsadores-unifilares', library: 'Interruptores y pulsadores (unifilares)', symbols: pack2 },
@@ -488,6 +784,9 @@ const PACKS = [
   { file: 'eclib-luminarias', library: 'Luminarias', symbols: pack7 },
   { file: 'eclib-instalacion-electrica-estados-unidos', library: 'Instalación eléctrica — Estados Unidos', symbols: pack8 },
   { file: 'eclib-instalacion-electrica-francia', library: 'Instalación eléctrica — Francia', symbols: pack9 },
+  { file: 'eclib-simbolos-electricos-y-electronicos', library: 'Símbolos eléctricos y electrónicos', symbols: pack10 },
+  { file: 'eclib-componentes-electronicos', library: 'Componentes electrónicos', symbols: pack11 },
+  { file: 'eclib-circuitos-electricos-y-electronicos', library: 'Circuitos eléctricos y electrónicos', symbols: pack12 },
 ];
 const out = process.argv[2] || '.';
 const solo = process.argv[3] ? process.argv[3].split(',') : null; // nombres de archivo a escribir (opcional)
