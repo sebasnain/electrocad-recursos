@@ -34,5 +34,32 @@
   "bytes": 9380,
   "json": "eclib-comando-y-potencia-tableros-industriales.json",
   "source": "Símbolos de comando y potencia (normas IRAM/IEC)."
+ },
+ {
+  "file": "eclib-planos-electricos-tabla-general.zip",
+  "name": "Planos eléctricos — tabla general",
+  "symbols": 34,
+  "description": "Centrales (nuclear, eólica, solar…), subestaciones, soportes y torres de redes, tomacorrientes, interruptores, pulsadores y salidas de luz para planos.",
+  "bytes": 3771,
+  "json": "eclib-planos-electricos-tabla-general.json",
+  "source": "Tabla de simbología para planos eléctricos de uso general en Latinoamérica, redibujada para ElectroCAD."
+ },
+ {
+  "file": "eclib-interruptores-y-pulsadores-unifilares.zip",
+  "name": "Interruptores y pulsadores (unifilares)",
+  "symbols": 18,
+  "description": "Interruptor unipolar y bipolar, conmutadores, regulador, persianas, temporizador, tirador y botones pulsadores.",
+  "bytes": 1660,
+  "json": "eclib-interruptores-y-pulsadores-unifilares.json",
+  "source": "Símbolos de contactos de uso general (tipo IEC 60617), redibujados para ElectroCAD."
+ },
+ {
+  "file": "eclib-instalacion-electrica-mexico.zip",
+  "name": "Instalación eléctrica — México",
+  "symbols": 9,
+  "description": "Salida de centro, arbotante, apagador sencillo y de escalera, contacto dúplex, acometida, medidor, centro de carga y S.I.E.",
+  "bytes": 1296,
+  "json": "eclib-instalacion-electrica-mexico.json",
+  "source": "Simbología de instalación eléctrica usada en planos de México, redibujada para ElectroCAD."
  }
 ]
