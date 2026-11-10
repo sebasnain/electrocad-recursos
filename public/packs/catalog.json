@@ -79,5 +79,41 @@
   "bytes": 3216,
   "json": "eclib-instalacion-electrica-espana.json",
   "source": "Simbología eléctrica normalizada usada en instalaciones de España, redibujada para ElectroCAD."
+ },
+ {
+  "file": "eclib-iluminacion-planos-de-arquitectura.zip",
+  "name": "Iluminación — planos de arquitectura",
+  "symbols": 77,
+  "description": "Barras de luces, listones fluorescentes, luces de techo y de pared, emergencia, carteles de salida, proyectores, spots, luces de calle y de jardín. Nombres en castellano (original en inglés en la descripción).",
+  "bytes": 7425,
+  "json": "eclib-iluminacion-planos-de-arquitectura.json",
+  "source": "Simbología de iluminación usada en planos de arquitectura en inglés, redibujada para ElectroCAD."
+ },
+ {
+  "file": "eclib-luminarias.zip",
+  "name": "Luminarias",
+  "symbols": 12,
+  "description": "Colgante, plafón, embutida, luminaria, luz de piso, de escalón, exterior, LED, apliques de pared y ventilador de techo con luz.",
+  "bytes": 1601,
+  "json": "eclib-luminarias.json",
+  "source": "Símbolos de luminarias de uso general en planos en inglés, redibujados para ElectroCAD."
+ },
+ {
+  "file": "eclib-instalacion-electrica-estados-unidos.zip",
+  "name": "Instalación eléctrica — Estados Unidos",
+  "symbols": 27,
+  "description": "Interruptores S y S3, tomas simple, doble, cuádruple, de 240 V, GFCI y a prueba de agua, luminarias, ventiladores, detector de humo, timbre y tierra.",
+  "bytes": 2314,
+  "json": "eclib-instalacion-electrica-estados-unidos.json",
+  "source": "Simbología residencial usada en planos de Estados Unidos, redibujada para ElectroCAD."
+ },
+ {
+  "file": "eclib-instalacion-electrica-francia.zip",
+  "name": "Instalación eléctrica — Francia",
+  "symbols": 11,
+  "description": "Interruptor simple y doble, va y viene, punto de luz, pulsadores, tomas 2P+T, teléfono, televisión, de seguridad y aparato de calefacción.",
+  "bytes": 1453,
+  "json": "eclib-instalacion-electrica-francia.json",
+  "source": "Simbología de instalación eléctrica usada en Francia, redibujada para ElectroCAD."
  }
 ]
