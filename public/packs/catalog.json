@@ -61,5 +61,23 @@
   "bytes": 1296,
   "json": "eclib-instalacion-electrica-mexico.json",
   "source": "Simbología de instalación eléctrica usada en planos de México, redibujada para ElectroCAD."
+ },
+ {
+  "file": "eclib-simbologia-electrica-normalizada-iec.zip",
+  "name": "Simbología eléctrica normalizada (IEC)",
+  "symbols": 45,
+  "description": "Cajas, centrales, contactos, descargadores y DPS, interruptores (general, bipolar, diferencial, termomagnético, seccionador), tierras, tomacorrientes y transformadores.",
+  "bytes": 3980,
+  "json": "eclib-simbologia-electrica-normalizada-iec.json",
+  "source": "Simbología eléctrica normalizada de uso general (tipo IEC 60617), redibujada para ElectroCAD."
+ },
+ {
+  "file": "eclib-instalacion-electrica-espana.zip",
+  "name": "Instalación eléctrica — España (unifilar y multifilar)",
+  "symbols": 40,
+  "description": "Interruptores, conmutadores, tomas de 16 y 25 A, clavijas, punto de luz, fluorescente, ICP, diferencial, PIA, telerruptor, timbre, zumbador, sirena y cajas de registro.",
+  "bytes": 3216,
+  "json": "eclib-instalacion-electrica-espana.json",
+  "source": "Simbología eléctrica normalizada usada en instalaciones de España, redibujada para ElectroCAD."
  }
 ]

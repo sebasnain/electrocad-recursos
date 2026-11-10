@@ -47,5 +47,19 @@
   "symbols": 9,
   "description": "Salida de centro, arbotante, apagador sencillo y de escalera, contacto dúplex, acometida, medidor, centro de carga y S.I.E.",
   "bytes": 1296
+ },
+ {
+  "file": "eclib-simbologia-electrica-normalizada-iec.zip",
+  "name": "Simbología eléctrica normalizada (IEC)",
+  "symbols": 45,
+  "description": "Cajas, centrales, contactos, descargadores y DPS, interruptores (general, bipolar, diferencial, termomagnético, seccionador), tierras, tomacorrientes y transformadores.",
+  "bytes": 3980
+ },
+ {
+  "file": "eclib-instalacion-electrica-espana.zip",
+  "name": "Instalación eléctrica — España (unifilar y multifilar)",
+  "symbols": 40,
+  "description": "Interruptores, conmutadores, tomas de 16 y 25 A, clavijas, punto de luz, fluorescente, ICP, diferencial, PIA, telerruptor, timbre, zumbador, sirena y cajas de registro.",
+  "bytes": 3216
  }
 ]
