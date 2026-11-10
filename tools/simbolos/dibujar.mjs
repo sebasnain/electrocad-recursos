@@ -313,12 +313,181 @@ const pack5 = [
   sym('Sirena (multifilar)', [F([0, -.45], [.45, .15], [-.45, .15]), L([-.2, .15], [-.2, .4], [-.5, .4]), L([.2, .15], [.2, .4], [.5, .4])]),
 ];
 
+// ── Etapa 2: iluminación, EE.UU. y Francia ─────────────────────────────
+const ticksDiag = (cx, cy, r, len = .25) => [45, 135, 225, 315].map(a => { const t = a * Math.PI / 180; return L([cx + Math.cos(t) * r, cy + Math.sin(t) * r], [cx + Math.cos(t) * (r + len), cy + Math.sin(t) * (r + len)]); });
+const ticksOrto = (cx, cy, r, len = .25) => [0, 90, 180, 270].map(a => { const t = a * Math.PI / 180; return L([cx + Math.cos(t) * r, cy + Math.sin(t) * r], [cx + Math.cos(t) * (r + len), cy + Math.sin(t) * (r + len)]); });
+const txt = (s, x, y, size = .34) => T(x - s.length * size * .3, y + size * .5, s, size); // texto centrado en (x,y), aprox.
+const brazoPared = (x0, x1, y = 0, h = .2) => [L([x0, y], [x1, y]), L([x0, y - h], [x0, y + h])]; // ⊢— (fijación a pared)
+const hoja = (cx, cy, ang, len = .45, w = .2) => { // lámpara en forma de hoja (emergencia)
+  const a = ang * Math.PI / 180, d = [Math.cos(a), Math.sin(a)], n = [-d[1], d[0]], pts = [];
+  for (let i = 0; i <= 16; i++) { const t = i / 16; const s = Math.sin(t * Math.PI) * w; pts.push([cx + d[0] * len * t + n[0] * s, cy + d[1] * len * t + n[1] * s]); }
+  for (let i = 16; i >= 0; i--) { const t = i / 16; const s = -Math.sin(t * Math.PI) * w * .35; pts.push([cx + d[0] * len * t + n[0] * s, cy + d[1] * len * t + n[1] * s]); }
+  return Lc(...pts);
+};
+const cono = (cx, cy, ang, len = .4, w = .22) => { // proyector (cono) que sale de (cx,cy)
+  const a = ang * Math.PI / 180, d = [Math.cos(a), Math.sin(a)], n = [-d[1], d[0]];
+  const p = (s, t) => [cx + d[0] * s + n[0] * t, cy + d[1] * s + n[1] * t];
+  return [L(p(0, -w * .35), p(len, -w), p(len, w), p(0, w * .35), p(0, -w * .35)), arc(...p(len, 0), w, ang - 90, ang + 90, 10)];
+};
+const barraLuces = n => { const w = .2 * n + .3, out = [L([-w / 2, -.12], [w / 2, -.12])];
+  for (let i = 0; i < n; i++) { const x = -w / 2 + .25 + i * .2; out.push(L([x, -.12], [x, -.04]), C(x, .04, .07)); } return out; };
+const batten = n => { const out = [], w = 1.6; for (let i = 0; i < n; i++) { const y = (i - (n - 1) / 2) * .1; out.push(L([-w / 2, y], [w / 2, y])); }
+  const h = Math.max(.12, (n - 1) * .05 + .1); out.push(L([-w / 2, -h], [-w / 2, h]), L([w / 2, -h], [w / 2, h])); return out; };
+const reloj = (cx, cy, r) => C(cx, cy, r);
+const D = (cx, cy, r, lleno) => { // media luna «D» que mira a la derecha (aplique)
+  const pts = arcPts(cx, cy, r, -90, 90, 16);
+  return [Lc(...pts), ...(lleno ? [F(...arcPts(cx + .02, cy, r * .62, -90, 90, 12))] : [])];
+};
+
+const pack6 = [
+  ...[1, 2, 4, 6, 8].map(n => sym(`Barra de ${n} luz${n > 1 ? 'es' : ''}`, barraLuces(n), `${n}-light bar`)),
+  ...[1, 2, 3, 4].map(n => sym(`Listón fluorescente, ${n} tubo${n > 1 ? 's' : ''}`, batten(n), `Batten fluorescent, ${n} lamp${n > 1 ? 's' : ''}`)),
+  sym('Ventilador de techo', [C(0, 0, .35), ...ticksDiag(0, 0, .35), txt('F', 0, 0)], 'Ceiling fan'),
+  sym('Luz de techo', [C(0, 0, .35), L([-.65, -.65], [-.25, -.25]), L([.65, -.65], [.25, -.25]), L([-.65, .65], [-.25, .25]), L([.65, .65], [.25, .25]), txt('L', 0, 0)], 'Ceiling light'),
+  sym('Boca de luz de techo', [C(0, 0, .38), ...ticksDiag(0, 0, .38)], 'Ceiling light outlet'),
+  sym('Luz de techo con cadena', [C(-.15, 0, .38), ...ticksDiag(-.15, 0, .38), txt('PC', .62, -.05, .28)], 'Ceiling light with pull cord'),
+  sym('Teclado de control', [rect(-.22, -.35, .44, .7), L([0, -.35], [0, .35]), L([-.22, -.12], [.22, -.12]), L([-.22, .12], [.22, .12])], 'Control keypad'),
+  sym('Luz descendente (downlight)', [C(-.15, 0, .26), ...X(-.15, 0, .17), arc(-.15, 0, .42, 110, 250, 12), L([.2, -.1], [.62, -.1]), flecha(.72, -.1, 1, 0, .12), L([.2, .1], [.62, .1]), flecha(.72, .1, 1, 0, .12)], 'Down lighter'),
+  sym('Equipo autónomo de emergencia', [rect(-.55, -.3, 1.1, .6)], 'Emergency battery unit'),
+  sym('Equipo autónomo de emergencia (con faros)', [rect(-.75, -.1, 1.5, .7), C(-.45, -.42, .2), C(.45, -.42, .2), C(-.45, -.42, .07), C(.45, -.42, .07), L([-.45, -.22], [-.45, -.1]), L([.45, -.22], [.45, -.1]),
+    rect(-.6, .12, .55, .2), rect(.3, .05, .28, .45)], 'Emergency battery unit'),
+  sym('Equipo de emergencia con dos luces', [L([-.45, .1], [-.45, -.45], [.45, -.45], [.45, .1]), L([-.75, .1], [.75, .1]), hoja(-.55, .1, 150, .55, .26), hoja(.55, .1, 30, .55, .26)], 'Emergency battery unit with two lights'),
+  sym('Luz de emergencia de pared (tortuga)', [C(.15, 0, .32), txt('E', .15, 0, .32), ...brazoPared(-.5, -.17)], 'Emergency bulkhead light'),
+  sym('Cartel de salida de emergencia (leyenda europea)', [rect(-.8, -.3, 1.6, .6), F([-.65, -.18], [-.42, -.18], [-.42, .18], [-.65, .18]), L([-.15, -.2], [-.15, .1]), flecha(-.15, .2, 0, 1, .12),
+    C(.32, -.16, .06, true), L([.3, -.08], [.24, .08], [.1, .2]), L([.24, .08], [.36, .2]), L([.29, -.04], [.45, .02])], 'Emergency bulkhead light, euro legend'),
+  sym('Luz de emergencia doble, remota', [L([-.15, -.75], [.15, -.75]), L([0, -.75], [0, -.15]), hoja(0, -.1, 135, .55, .18), hoja(0, -.1, 45, .55, .18)], 'Emergency duplex light, remote mounted'),
+  sym('Luces de emergencia', [F([-.55, -.25], [-.15, -.25], [-.35, 0]), F([-.55, .25], [-.15, .25], [-.35, 0]), C(.35, 0, .2, true)], 'Emergency lights'),
+  sym('Luz de emergencia embutida', [rect(-.6, -.35, 1.2, .7), F([-.6, .35], [.6, -.35], [.6, .35])], 'Emergency light, recessed'),
+  sym('Señalización de emergencia', [rect(-.35, -.2, .9, .4), F([-.25, -.2], [.25, -.2], [0, 0]), F([-.25, .2], [.25, .2], [0, 0]), L([-.7, 0], [-.35, 0])], 'Emergency sign'),
+  sym('Luz de emergencia simple, remota', [L([-.15, -.75], [.15, -.75]), L([0, -.75], [0, -.05]), arc(0, .15, .4, 180, 360, 16), L([-.4, .15], [.4, .15])], 'Emergency single light, remote mounted'),
+  sym('Luminaria de techo cerrada', [rect(-.3, -.3, .6, .6), ...X(0, 0, .3)], 'Enclosed ceiling luminaire'),
+  sym('Cartel de salida, colgante', [C(0, 0, .45), ...X(0, 0, .32)], 'Exit sign, pendant mounted'),
+  sym('Cartel de salida, de pared', [C(.2, 0, .4), ...X(.2, 0, .28), ...brazoPared(-.7, -.2)], 'Exit sign, wall mounted'),
+  sym('Luz de piso hacia arriba (uplight)', [C(0, 0, .4), L([-.6, 0], [.6, 0]), L([0, -.6], [0, .6]), F([0, 0], ...arcPts(0, 0, .4, 180, 270, 8)), F([0, 0], ...arcPts(0, 0, .4, 0, 90, 8))], 'Floor uplight'),
+  sym('Bañador de piso', [rect(-.4, -.4, .8, .45), L([-.12, .05], [-.35, .45]), L([.12, .05], [.35, .45])], 'Floor washer light'),
+  sym('Luz empotrada en el piso', [rect(-.42, -.42, .84, .84), C(0, 0, .4)], 'Inground light, floor mounted'),
+  sym('Luz integrada', [C(0, 0, .4), L([-.32, .32], [.52, -.52])], 'Integrated light'),
+  sym('Luz direccional de acento', [C(0, -.1, .38), L([-.55, -.25], [0, .4], [.55, -.25])], 'Light, directional accent'),
+  sym('Luz direccional con línea de enfoque', [C(-.5, 0, .35), L([-.5, 0], [.85, 0])], 'Light, directional aiming line'),
+  sym('Luz direccional con flecha', [C(0, -.3, .38), L([0, -.3], [0, .45]), flecha(0, .6, 0, 1, .16)], 'Light, directional arrow'),
+  sym('Proyector en poste', [Lc([0, -.5], [.5, 0], [0, .5], [-.5, 0]), C(0, 0, .3), L([0, -.5], [0, -.62]), C(0, -.7, .08, true)], 'Light flood, pole mounted'),
+  sym('Proyector de pared', [Lc([.25, -.45], [.7, 0], [.25, .45], [-.2, 0]), C(.25, 0, .27), ...brazoPared(-.75, -.2)], 'Light flood, wall mounted'),
+  sym('Luz en poste', [C(0, 0, .4), C(0, 0, .28)], 'Light, pole mounted'),
+  sym('Luz en columna', [C(0, .15, .35), ...ticksDiag(0, .15, .35, .2), L([0, -.2], [0, -.62]), C(0, -.7, .08, true)], 'Light, stanchion mounted'),
+  sym('Luz de superficie', [C(0, 0, .4)], 'Light, surface mounted'),
+  sym('Riel de luces', [L([-.75, .15], [.75, .15]), ...[-.45, 0, .45].map(x => Lc([x - .16, -.15], [x + .16, -.15], [x, .1]))], 'Light track'),
+  sym('Fotocélula de iluminación', [C(.15, 0, .38), txt('PC', .15, 0, .3), ...brazoPared(-.55, -.23)], 'Lighting photocell'),
+  sym('Luces montadas en riel', [C(-.45, -.15, .3), C(.35, -.15, .3), L([-.15, -.15], [.05, -.15]), L([.65, -.15], [.95, -.15]), L([.35, -.15], [.35, .45]), flecha(.35, .6, 0, 1, .16)], 'Lights, track mounted'),
+  sym('Rejilla difusora (louver)', [rect(-.7, -.3, 1.4, .6), ...[-.5, -.3, -.1, .1, .3, .5].map(x => L([x, -.3], [x, .3])), L([-.7, -.1], [.7, -.1]), L([-.7, .1], [.7, .1])], 'Louvers'),
+  sym('Luminaria de techo', [...X(0, 0, .3)], 'Luminaire ceiling mount'),
+  sym('Mini spot', [L([.3, -.4], [.3, .4]), L([-.55, 0], [.3, 0]), L([-.1, -.3], [.3, 0], [-.1, .3])], 'Mini spotlight'),
+  sym('Luminaria fluorescente modular', [rect(-.6, -.3, 1.2, .6)], 'Modular fluorescent fitting'),
+  sym('Luminaria fluorescente modular con inversor', [rect(-.6, -.3, 1.2, .6), F([.25, .3], [.6, -.3], [.6, .3])], 'Modular fluorescent fitting, inverter'),
+  sym('Luminaria fluorescente modular (cuadrada)', [rect(-.55, -.32, 1.1, .64), C(0, 0, .45)], 'Modular fluorescent fitting'),
+  sym('Luz de noche', [rect(-.35, -.2, .7, .4), txt('NL', 0, 0, .26)], 'Night light'),
+  sym('Luz de noche (enchufable)', [C(0, .15, .38), C(0, .15, .24), L([-.25, -.15], [-.25, -.5], [.25, -.5], [.25, -.15]), L([-.1, -.5], [-.1, -.72]), L([.1, -.5], [.1, -.72])], 'Night light'),
+  sym('Iluminación exterior', [C(-.15, 0, .25), ...X(-.15, 0, .17), txt('S', .35, 0, .34)], 'Outdoor lighting'),
+  sym('Iluminación exterior, baliza', [C(-.15, 0, .25), ...X(-.15, 0, .17), txt('B', .35, 0, .34)], 'Outdoor lighting, bollard'),
+  sym('Luz colgante', [C(0, 0, .4), L([-.65, 0], [.65, 0]), L([0, -.65], [0, .65]), F([0, 0], ...arcPts(0, 0, .4, 180, 270, 8))], 'Pendant light'),
+  sym('Luz de techo embutida', [C(0, 0, .35), ...ticksDiag(0, 0, .35), txt('R', 0, 0, .3)], 'Recessed ceiling light'),
+  sym('Luz de techo embutida (con brazo)', [C(.25, 0, .4), C(.25, 0, .28), ...X(.25, 0, .2), L([-.2, 0], [-.15, 0]), rect(-.65, -.45, .1, .9), L([-.55, 0], [-.15, 0])], 'Recessed ceiling light'),
+  sym('Luz embutida', [rect(-.6, -.15, 1.2, .3), L([-.6, .15], [.6, -.15])], 'Recessed light'),
+  sym('Luz embutida (R)', [C(0, 0, .35), txt('R', 0, 0, .32)], 'Recessed light'),
+  sym('Luz de calle', [Lc(...arcPts(-.7, 0, .12, 0, 360, 16)), L([-.58, 0], [-.3, 0]), L([-.3, -.25], [.35, -.25]), arc(.35, 0, .25, -90, 90, 10), L([.35, .25], [-.3, .25], [-.3, -.25])], 'Roadway light'),
+  sym('Luz de calle, cabeza cobra', [C(-.65, 0, .17), L([-.48, 0], [-.3, 0]), L([-.3, -.12], [.55, -.2]), arc(.55, 0, .2, -90, 90, 10), L([.55, .2], [-.3, .12], [-.3, -.12])], 'Roadway light, cobra head'),
+  sym('Proyector (spot)', [rect(-.45, -.4, .15, .8), L([-.3, -.25], [-.15, -.25]), L([-.3, .25], [-.15, .25]), L([-.15, -.35], [.2, -.35]), arc(.2, 0, .35, -90, 90, 14), L([.2, .35], [-.15, .35], [-.15, -.35])], 'Spotlight'),
+  sym('Spot de dos cabezas', [C(-.25, .05, .3), ...cono(.0, -.15, -35, .45, .2), ...cono(.0, .25, 35, .45, .2)], 'Spotlight, double head'),
+  sym('Spot de una cabeza', [C(-.25, 0, .3), ...cono(.05, 0, 0, .45, .22)], 'Spotlight, single head'),
+  sym('Luz fluorescente de superficie', [rect(-.55, -.3, 1.1, .6), L([-.55, .3], [.55, -.3])], 'Surface fluorescent light'),
+  sym('Luz suspendida', [C(0, 0, .32), C(0, 0, .12, true)], 'Suspended light'),
+  sym('Luces suspendidas', [rect(-.6, -.3, 1.2, .6), C(-.25, 0, .1, true), C(.25, 0, .1, true)], 'Suspended lights'),
+  sym('Luces dobles colgantes', [C(-.55, 0, .28), ...ticksDiag(-.55, 0, .28, .17), C(.55, 0, .28), ...ticksDiag(.55, 0, .28, .17), L([-.27, 0], [.27, 0]), C(0, 0, .07, true)], 'Twin lights, pendant mounted'),
+  sym('Luz bajo mueble', [C(0, 0, .38), F(...arcPts(0, 0, .38, 90, 270, 12)), L([0, -.6], [0, .6])], 'Under cabinet light'),
+  sym('Aplique de pared (en columna)', [C(0, -.2, .35), L([0, .15], [0, .5]), L([-.2, .5], [.2, .5])], 'Wall light'),
+  sym('Aplique de pared (regleta)', [rect(-.55, -.18, 1.1, .32), L([-.35, .14], [-.35, .28]), L([.35, .14], [.35, .28]), L([-.45, .28], [-.25, .28]), L([.25, .28], [.45, .28])], 'Wall light'),
+  sym('Aplique de pared', [C(.2, 0, .35), L([-.6, 0], [-.15, 0])], 'Wall light'),
+  sym('Aplique de pared (triangular)', [L([-.3, -.4], [-.3, .4]), Lc([-.3, 0], [.3, -.3], [.3, .3])], 'Wall light'),
+  sym('Aplique de pared (cruz)', [...X(-.05, 0, .22), L([.25, -.35], [.25, .35])], 'Wall light'),
+  sym('Boca de aplique de pared', [C(.25, 0, .32), ...ticksDiag(.25, 0, .32, .18), ...brazoPared(-.65, -.07)], 'Wall light outlet'),
+  sym('Luz de jardín, a prueba de intemperie', [C(0, 0, .35), ...ticksDiag(0, 0, .35, .2), txt('WP', 0, 0, .26)], 'Weatherproof landscape light'),
+  sym('Downlight estanco', [C(0, 0, .38), txt('WP', 0, 0, .28)], 'Waterproof downlight'),
+  sym('Aplique de pared arriba y abajo', [rect(-.35, -.35, .7, .7), C(0, 0, .07, true)], 'Wall up and down light'),
+];
+
+const pack7 = [
+  sym('Luminaria colgante', [C(0, 0, .38), ...ticksOrto(0, 0, .38)], 'Pendant fixture light'),
+  sym('Plafón de techo', [C(0, 0, .45), ...ticksDiag(0, 0, .45)], 'Surface ceiling light'),
+  sym('Luminaria de techo embutida', [C(0, 0, .45), C(0, 0, .32, true), ...ticksDiag(0, 0, .45)], 'Recessed ceiling light'),
+  sym('Luminaria', [...X(0, 0, .55)], 'Luminaire light'),
+  sym('Luz de piso', [rect(-.55, -.55, 1.1, 1.1), C(0, 0, .45), ...X(0, 0, .55)], 'Floor light'),
+  sym('Luz de escalón', [...D(-.25, 0, .45), L([-.05, -.3], [.4, -.6]), flecha(.48, -.66, 1, -.75, .14), L([-.05, .3], [.4, .6]), flecha(.48, .66, 1, .75, .14)], 'Step light'),
+  sym('Luz exterior', [C(0, 0, .5), ...X(0, 0, .35)], 'Outdoor light'),
+  sym('Luz LED (tira)', [...[-.06, .06].flatMap(y => Array.from({ length: 9 }, (_, i) => L([-.85 + i * .2, y], [-.73 + i * .2, y])))], 'LED light'),
+  sym('Aplique de pared', [L([-.65, -.4], [-.65, .4]), L([-.65, 0], [-.35, 0]), C(.05, 0, .4), ...X(.05, 0, .28)], 'Wall light'),
+  sym('Aplique de pared de superficie', [...D(-.3, 0, .45), L([.15, 0], [.6, 0])], 'Surface wall light'),
+  sym('Aplique de pared embutido', [...D(-.3, 0, .45, true), L([.15, 0], [.6, 0])], 'Recessed wall light'),
+  sym('Ventilador de techo con luz', [C(0, 0, .2), C(0, 0, .1), ...[0, 90, 180, 270].map(a => { const t = a * Math.PI / 180, c = Math.cos(t), s = Math.sin(t);
+    return L([c * .2 - s * .2, s * .2 + c * .2], [c * .2 - s * .2 + c * .55 + s * .15, s * .2 + c * .2 + s * .55 - c * .15]); })], 'Ceiling fan with light'),
+];
+
+const tomaUS = (lineas, extra = []) => [C(.15, 0, .35), ...lineas.map(y => L([-.65, y], [.15 + Math.sqrt(Math.max(0, .35 ** 2 - y * y)), y])), ...extra];
+const aspas = (cx, cy, r) => [L([cx - r - .35, cy - .4], [cx - r, cy]), L([cx + r, cy], [cx + r + .35, cy + .4])];
+const pack8 = [
+  sym('Caja eléctrica', [F([-.6, -.12], [.6, -.12], [.55, .12], [-.6, .12])], 'Electrical switchbox'),
+  sym('Interruptor unipolar', [txt('S', 0, 0, .6)], 'Single pole switch'),
+  sym('Interruptor de tres vías (S3)', [T(-.3, .25, 'S', .6), T(.08, .35, '3', .32)], 'Three-way switch'),
+  sym('Tomacorriente simple', tomaUS([0]), 'Singleplex receptacle'),
+  sym('Tomacorriente doble', tomaUS([-.08, .08]), 'Duplex receptacle'),
+  sym('Tomacorriente doble a prueba de agua', tomaUS([-.08, .08], [txt('WP', .78, .15, .26)]), 'Duplex receptacle, WP = waterproof'),
+  sym('Tomacorriente doble con disyuntor (GFCI)', tomaUS([-.08, .08], [txt('GFCI', .72, .35, .2)]), 'GFCI duplex receptacle'),
+  sym('Tomacorriente con tierra aislada', tomaUS([-.08, .08], [Lc([.15, -.25], [.38, .17], [-.08, .17]), txt('*', .65, -.3, .35)]), 'Isolated ground receptacle'),
+  sym('Tomacorriente conmutado', tomaUS([-.08, .08], [F(...arcPts(.15, 0, .35, 180, 360, 12))]), 'Switched receptacle'),
+  sym('Tomacorriente cuádruple', tomaUS([-.08, .08], [L([.15, -.35], [.15, .35])]), 'Fourplex (four gang) receptacle'),
+  sym('Tomacorriente de 240 V', tomaUS([-.13, 0, .13]), '240-volt receptacle'),
+  sym('Luminaria de techo (cadena)', [C(0, 0, .35), ...ticksOrto(0, 0, .35, .2), txt('PC', .5, .4, .2)], 'Ceiling mounted light fixture, PC = pullchain'),
+  sym('Luminaria de pared', [C(.15, 0, .35), L([-.5, 0], [-.2, 0])], 'Wall-mounted light fixture'),
+  sym('Luminaria embutida', [C(0, 0, .35), txt('R', 0, 0, .3)], 'Recessed light fixture'),
+  sym('Luminaria a prueba de intemperie', [C(.1, 0, .35), L([-.5, 0], [-.25, 0]), txt('WP', .55, .35, .2)], 'Weatherproof light fixture'),
+  sym('Luminaria fluorescente', [rect(-.6, -.25, 1.2, .5), C(-.35, 0, .2)], 'Fluorescent light fixture'),
+  sym('Luminaria fluorescente (línea)', [L([-.6, 0], [.6, 0]), L([-.6, -.15], [-.6, .15]), L([.6, -.15], [.6, .15])], 'Fluorescent light fixture'),
+  sym('Ventilador de techo', [C(0, 0, .3), ...aspas(0, 0, .3), txt('CF', .55, .55, .2)], 'Ceiling fan'),
+  sym('Luz y ventilador combinados', [C(0, 0, .3), C(0, 0, .15), ...aspas(0, 0, .3)], 'Combination light & fan'),
+  sym('Extractor (ventilador)', [C(0, 0, .3), ...aspas(0, 0, .3), txt('VF', .55, .55, .2)], 'Power vent fan'),
+  sym('Motor eléctrico (número = HP)', [C(0, 0, .3), ...aspas(0, 0, .3), txt('2', 0, 0, .3)], 'Electric motor, number = HP'),
+  sym('Detector de humo', [C(0, 0, .38), txt('SD', 0, 0, .28)], 'Smoke detector'),
+  sym('Interruptor automático (breaker)', [L([-.7, .1], [-.35, .1]), arc(0, .1, .35, 180, 360, 16), L([.35, .1], [.7, .1])], 'Circuit breaker'),
+  sym('Toma de teléfono', [F([-.3, -.3], [.25, 0], [-.3, .3]), L([.28, -.32], [.28, .32])], 'Telephone jack'),
+  sym('Transformador de timbre', [rect(-.35, -.35, .7, .7), txt('T', 0, 0, .34)], 'Doorbell transformer'),
+  sym('Pulsador de timbre', [rect(-.35, -.35, .7, .7), C(0, 0, .15, true)], 'Doorbell pushbutton'),
+  sym('Tierra', [L([0, -.6], [0, .05]), ...tierraLineas(.05, .45)], 'Ground'),
+];
+
+const intF = (ang, len = .95) => brazo(-.2, .3, .17, ang, len);
+const pack9 = [
+  (() => { const b = intF(-45); return sym('Interruptor simple', [C(-.2, .3, .17), L(b.p0, b.p1)], 'Interrupteur simple allumage'); })(),
+  (() => { const l = brazo(0, .3, .17, -130, .8), r = brazo(0, .3, .17, -50, .8); return sym('Interruptor doble', [C(0, .3, .17), L(l.p0, l.p1), L(r.p0, r.p1)], 'Double interrupteur'); })(),
+  (() => { const u = brazo(0, 0, .17, -40, .8), d = brazo(0, 0, .17, 140, .8);
+    return sym('Conmutador (va y viene)', [C(0, 0, .17), L(u.p0, u.p1), L(d.p0, d.p1), remate(u, 1, .2), remate(d, 1, .2, 'ccw')], 'Interrupteur va-et-vient'); })(),
+  sym('Punto de luz', [...X(0, 0, .45)], "Point d'éclairage"),
+  sym('Pulsador', [C(0, 0, .45), C(0, 0, .35)], 'Bouton poussoir'),
+  sym('Toma 2P+T con protección', [arc(0, -.25, .4, 0, 180, 16), L([-.55, .15], [.55, .15]), L([0, .15], [0, .6]), L([-.55, -.25], [-.4, -.25]), L([.4, -.25], [.55, -.25])], 'Prise 2P + T à éclips'),
+  sym('Toma de teléfono', [L([-.25, -.2], [-.25, .05], [.25, .05], [.25, -.2]), L([0, .05], [0, .7]), txt('TP', 0, -.45, .3)], 'Prise téléphone'),
+  sym('Toma de televisión', [L([-.25, -.2], [-.25, .05], [.25, .05], [.25, -.2]), L([0, .05], [0, .7]), txt('TV', 0, -.45, .3)], 'Prise télévision'),
+  sym('Toma de seguridad', [C(0, 0, .3), L([-.3, -.45], [-.2, -.2]), L([.3, -.45], [.2, -.2]), L([0, .3], [0, .7])], 'Prise de sécurité'),
+  sym('Aparato de calefacción', [rect(-.9, -.15, 1.8, .3), ...[-.6, -.3, 0, .3, .6].map(x => L([x, -.15], [x, .15]))], 'Appareil de chauffage'),
+  sym('Pulsador luminoso', [C(0, 0, .45), C(0, 0, .35), ...X(0, 0, .24)], 'B.P. lumineux'),
+];
+
 const PACKS = [
   { file: 'eclib-planos-electricos-tabla-general', library: 'Planos eléctricos — tabla general', symbols: pack1 },
   { file: 'eclib-interruptores-y-pulsadores-unifilares', library: 'Interruptores y pulsadores (unifilares)', symbols: pack2 },
   { file: 'eclib-instalacion-electrica-mexico', library: 'Instalación eléctrica — México', symbols: pack3 },
   { file: 'eclib-simbologia-electrica-normalizada-iec', library: 'Simbología eléctrica normalizada (IEC)', symbols: pack4 },
   { file: 'eclib-instalacion-electrica-espana', library: 'Instalación eléctrica — España (unifilar y multifilar)', symbols: pack5 },
+  { file: 'eclib-iluminacion-planos-de-arquitectura', library: 'Iluminación — planos de arquitectura', symbols: pack6 },
+  { file: 'eclib-luminarias', library: 'Luminarias', symbols: pack7 },
+  { file: 'eclib-instalacion-electrica-estados-unidos', library: 'Instalación eléctrica — Estados Unidos', symbols: pack8 },
+  { file: 'eclib-instalacion-electrica-francia', library: 'Instalación eléctrica — Francia', symbols: pack9 },
 ];
 const out = process.argv[2] || '.';
 const solo = process.argv[3] ? process.argv[3].split(',') : null; // nombres de archivo a escribir (opcional)
