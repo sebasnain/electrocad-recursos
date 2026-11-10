@@ -115,5 +115,32 @@
   "bytes": 1453,
   "json": "eclib-instalacion-electrica-francia.json",
   "source": "Simbología de instalación eléctrica usada en Francia, redibujada para ElectroCAD."
+ },
+ {
+  "file": "eclib-simbolos-electricos-y-electronicos.zip",
+  "name": "Símbolos eléctricos y electrónicos",
+  "symbols": 67,
+  "description": "Antena, instrumentos (amperímetro, voltímetro, vatímetro, galvanómetro), baterías, capacitores, contactos, diodos, compuertas lógicas, lámparas, motor, resistencias, relé, transformador y transistores.",
+  "bytes": 6172,
+  "json": "eclib-simbolos-electricos-y-electronicos.json",
+  "source": "Símbolos eléctricos y electrónicos de uso general (tipo IEC), redibujados para ElectroCAD."
+ },
+ {
+  "file": "eclib-componentes-electronicos.zip",
+  "name": "Componentes electrónicos",
+  "symbols": 60,
+  "description": "Resistencias, capacitores, diodos, transistores, MOSFET, JFET, tiristor, DIAC, TRIAC, reguladores, optoacoplador, sensores, relé, displays, conectores y bornera.",
+  "bytes": 6096,
+  "json": "eclib-componentes-electronicos.json",
+  "source": "Símbolos de componentes electrónicos comunes, redibujados para ElectroCAD."
+ },
+ {
+  "file": "eclib-circuitos-electricos-y-electronicos.zip",
+  "name": "Circuitos eléctricos y electrónicos",
+  "symbols": 93,
+  "description": "Fuentes y generadores, interruptores SPST/SPDT/DPST/DPDT, tierras, compuertas, amplificadores, antenas, transformadores, inductores, ADC/DAC y termocupla.",
+  "bytes": 9410,
+  "json": "eclib-circuitos-electricos-y-electronicos.json",
+  "source": "Símbolos de circuitos eléctricos y electrónicos de uso general, redibujados para ElectroCAD."
  }
 ]

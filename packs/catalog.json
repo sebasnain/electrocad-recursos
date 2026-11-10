@@ -89,5 +89,26 @@
   "symbols": 11,
   "description": "Interruptor simple y doble, va y viene, punto de luz, pulsadores, tomas 2P+T, teléfono, televisión, de seguridad y aparato de calefacción.",
   "bytes": 1453
+ },
+ {
+  "file": "eclib-simbolos-electricos-y-electronicos.zip",
+  "name": "Símbolos eléctricos y electrónicos",
+  "symbols": 67,
+  "description": "Antena, instrumentos (amperímetro, voltímetro, vatímetro, galvanómetro), baterías, capacitores, contactos, diodos, compuertas lógicas, lámparas, motor, resistencias, relé, transformador y transistores.",
+  "bytes": 6172
+ },
+ {
+  "file": "eclib-componentes-electronicos.zip",
+  "name": "Componentes electrónicos",
+  "symbols": 60,
+  "description": "Resistencias, capacitores, diodos, transistores, MOSFET, JFET, tiristor, DIAC, TRIAC, reguladores, optoacoplador, sensores, relé, displays, conectores y bornera.",
+  "bytes": 6096
+ },
+ {
+  "file": "eclib-circuitos-electricos-y-electronicos.zip",
+  "name": "Circuitos eléctricos y electrónicos",
+  "symbols": 93,
+  "description": "Fuentes y generadores, interruptores SPST/SPDT/DPST/DPDT, tierras, compuertas, amplificadores, antenas, transformadores, inductores, ADC/DAC y termocupla.",
+  "bytes": 9410
  }
 ]
